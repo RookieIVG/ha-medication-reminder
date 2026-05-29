@@ -1,0 +1,92 @@
+# Companion automations for the Medication Reminder integration.
+#
+# The integration creates a switch per dose (on = given today) and handles the
+# daily reset. These automations do the reminders, nagging, and missed-dose
+# escalation by reading EVERY dose switch's attributes (patient, dose_time,
+# medications). Add a patient or dose in the UI and these pick it up
+# automatically; no edits needed here.
+#
+# Setup: add both automations to automations.yaml, and define a `caretakers`
+# notify group (or change notify.caretakers below to your own notify service).
+
+- id: med_reminder
+  alias: "Medication - Reminders & missed-dose escalation"
+  trigger:
+    - platform: time_pattern
+      minutes: "/15"
+  variables:
+    nag_minutes: 45
+    default_notify: caretakers
+  action:
+    - repeat:
+        for_each: >
+          {{ states.switch
+             | selectattr('attributes.medications', 'defined')
+             | map(attribute='entity_id') | list }}
+        sequence:
+          - variables:
+              ent: "{{ repeat.item }}"
+              oid: "{{ ent.split('.')[1] }}"
+              given: "{{ is_state(ent, 'on') }}"
+              dtime: "{{ state_attr(ent, 'dose_time') }}"
+              patient: "{{ state_attr(ent, 'patient') }}"
+              meds: "{{ state_attr(ent, 'medications') }}"
+              mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
+              clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') }}"
+          - choose:
+              # Within nag window, not yet given -> reminder
+              - conditions:
+                  - "{{ not given and mins_since >= 0 and mins_since < nag_minutes }}"
+                sequence:
+                  - action: "notify.{{ default_notify }}"
+                    data:
+                      title: "💊 {{ patient }} ({{ clock }})"
+                      message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
+                      data:
+                        tag: "med_{{ oid }}"
+                        actions:
+                          - action: "MED_GIVEN_{{ oid }}"
+                            title: "✅ Mark given"
+              # Just past window-end, still not given -> escalate once
+              - conditions:
+                  - "{{ not given and mins_since >= nag_minutes and mins_since < nag_minutes + 15 }}"
+                sequence:
+                  - action: "notify.{{ default_notify }}"
+                    data:
+                      title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
+                      message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was NOT marked given. Please check on it."
+                      data:
+                        tag: "med_missed_{{ oid }}"
+                        priority: high
+                        ttl: 0
+                        push:
+                          interruption-level: time-sensitive
+                        actions:
+                          - action: "MED_GIVEN_{{ oid }}"
+                            title: "✅ Mark given"
+  mode: single
+
+- id: med_reminder_mark_given
+  alias: "Medication - Mark given from notification"
+  trigger:
+    - platform: event
+      event_type: mobile_app_notification_action
+  condition:
+    - "{{ trigger.event.data.action.startswith('MED_GIVEN_') }}"
+  variables:
+    oid: "{{ trigger.event.data.action | replace('MED_GIVEN_', '') }}"
+  action:
+    - action: switch.turn_on
+      target:
+        entity_id: "switch.{{ oid }}"
+    - action: notify.caretakers
+      data:
+        message: "clear_notification"
+        data:
+          tag: "med_{{ oid }}"
+    - action: notify.caretakers
+      data:
+        message: "clear_notification"
+        data:
+          tag: "med_missed_{{ oid }}"
+  mode: parallel
