@@ -12,7 +12,14 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import slugify
 
-from .const import CONF_DOSES, CONF_MEDS, CONF_PATIENT, DOMAIN, CONF_TIME
+from .const import (
+    CONF_DOSES,
+    CONF_MEDS,
+    CONF_NOTIFY,
+    CONF_PATIENT,
+    CONF_TIME,
+    DOMAIN,
+)
 
 
 async def async_setup_entry(
@@ -22,8 +29,11 @@ async def async_setup_entry(
 ) -> None:
     """Create a switch per dose and wire up the daily reset."""
     patient: str = entry.data[CONF_PATIENT]
+    notify_target: str = entry.options.get(CONF_NOTIFY, "")
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
-    entities = [MedicationDoseSwitch(entry, patient, dose) for dose in doses]
+    entities = [
+        MedicationDoseSwitch(entry, patient, notify_target, dose) for dose in doses
+    ]
     async_add_entities(entities)
 
     @callback
@@ -44,9 +54,14 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
     _attr_icon = "mdi:pill"
 
     def __init__(
-        self, entry: ConfigEntry, patient: str, dose: dict[str, Any]
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        notify_target: str,
+        dose: dict[str, Any],
     ) -> None:
         self._patient = patient
+        self._notify = notify_target
         self._time = str(dose[CONF_TIME])[:5]
         self._meds = dose[CONF_MEDS]
         self._attr_name = f"{patient} {self._time}"
@@ -67,6 +82,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "patient": self._patient,
             "dose_time": self._time,
             "medications": self._meds,
+            "notify_service": self._notify,
         }
 
     async def async_added_to_hass(self) -> None:
