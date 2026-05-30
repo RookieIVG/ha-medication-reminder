@@ -19,21 +19,27 @@ if ! command -v hass >/dev/null 2>&1; then
 fi
 
 CONFIG_DIR="${PWD}/config"
+mkdir -p "${CONFIG_DIR}"
 
-# First run: create a default config.
+# First run: write a minimal dev config. We do NOT use `default_config` because
+# it pulls in go2rtc, which needs a binary not present in a bare venv/Core
+# install; it fails to set up and takes the config/UI panel down with it.
+# Add components below as you need them.
 if [[ ! -f "${CONFIG_DIR}/configuration.yaml" ]]; then
-    mkdir -p "${CONFIG_DIR}"
-    hass --config "${CONFIG_DIR}" --script ensure_config
-fi
+    touch "${CONFIG_DIR}/automations.yaml" \
+          "${CONFIG_DIR}/scripts.yaml" \
+          "${CONFIG_DIR}/scenes.yaml"
+    cat > "${CONFIG_DIR}/configuration.yaml" <<'YAML'
+# Minimal dev config for the Medication Reminder integration.
+# Avoids default_config (it pulls in go2rtc, which needs a binary not present
+# in a bare venv/Core install). Add components here as you need them.
+frontend:
+config:
+mobile_app:
 
-# Make this integration visible to HA via custom_components.
-mkdir -p "${CONFIG_DIR}/custom_components"
-ln -sf "${PWD}/custom_components/medication_reminder" \
-       "${CONFIG_DIR}/custom_components/medication_reminder"
-
-# Turn on debug logging for the integration (once).
-if ! grep -q "custom_components.medication_reminder" "${CONFIG_DIR}/configuration.yaml"; then
-    cat >> "${CONFIG_DIR}/configuration.yaml" <<'YAML'
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
 
 logger:
   default: info
@@ -41,6 +47,11 @@ logger:
     custom_components.medication_reminder: debug
 YAML
 fi
+
+# Make this integration visible to HA via custom_components.
+mkdir -p "${CONFIG_DIR}/custom_components"
+ln -sf "${PWD}/custom_components/medication_reminder" \
+       "${CONFIG_DIR}/custom_components/medication_reminder"
 
 # Run Home Assistant (Ctrl+C to stop).
 hass --config "${CONFIG_DIR}" --debug
