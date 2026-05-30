@@ -15,7 +15,7 @@ This is the UI-driven sibling of the YAML package at
 Prefer pure YAML? Use that one. Want point-and-click dose management with
 auto-created entities? Use this.
 
-![Medication Reminder dashboard](dashboard.png)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard.png)
 
 > ⚠️ **Alpha software.** This is new and not yet widely tested. Validate it on
 > your own Home Assistant before relying on it, and keep a backup reminder method
@@ -104,6 +104,8 @@ sort:
 A simple "all OK / attention needed" panel for the top of a dashboard, driven by
 the `needs_attention` sensors. Green when nothing is overdue, red (with who and
 what) when something needs investigating. Native card, no HACS needed:
+
+![Attention needed state](dashboard-attention-needed.png)
 
 ```yaml
 type: markdown
