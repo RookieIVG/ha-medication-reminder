@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, selector
 
 from .const import (
+    CONF_DAYS,
     CONF_DOSES,
     CONF_MEDS,
     CONF_NAG_INTERVAL,
@@ -21,6 +22,7 @@ from .const import (
     CONF_RESET_TIME,
     CONF_TIME,
     CONF_TIME_FORMAT,
+    DEFAULT_DAYS,
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
@@ -68,6 +70,25 @@ def _time_format_selector() -> selector.SelectSelector:
                 {"value": "24h", "label": "24-hour (14:00)"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _days_selector() -> selector.SelectSelector:
+    """Multi-select of the days of the week a dose applies to."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                {"value": "mon", "label": "Monday"},
+                {"value": "tue", "label": "Tuesday"},
+                {"value": "wed", "label": "Wednesday"},
+                {"value": "thu", "label": "Thursday"},
+                {"value": "fri", "label": "Friday"},
+                {"value": "sat", "label": "Saturday"},
+                {"value": "sun", "label": "Sunday"},
+            ],
+            multiple=True,
+            mode=selector.SelectSelectorMode.LIST,
         )
     )
 
@@ -150,7 +171,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     async def async_step_add_dose(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Add one dose: a time and the medications given at it."""
+        """Add one dose: a time, the medications, and which days it applies."""
         if user_input is not None:
             options = dict(self._entry.options)
             doses = list(options.get(CONF_DOSES, []))
@@ -158,6 +179,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 {
                     CONF_TIME: str(user_input[CONF_TIME])[:5],
                     CONF_MEDS: user_input[CONF_MEDS],
+                    CONF_DAYS: user_input.get(CONF_DAYS) or list(DEFAULT_DAYS),
                 }
             )
             options[CONF_DOSES] = doses
@@ -166,6 +188,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(CONF_TIME): selector.TimeSelector(),
                 vol.Required(CONF_MEDS): selector.TextSelector(),
+                vol.Required(CONF_DAYS, default=list(DEFAULT_DAYS)): _days_selector(),
             }
         )
         return self.async_show_form(step_id="add_dose", data_schema=schema)
