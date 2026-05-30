@@ -123,6 +123,27 @@ content: |-
 Because `binary_sensor.<patient>_needs_attention` is a standard `problem` entity,
 you can also drive a light, siren, pager, or notification straight off it.
 
+**Make the panel flash when attention is needed** (needs the HACS
+[card-mod](https://github.com/thomasloven/lovelace-card-mod) card). Add this to
+the markdown card above:
+
+```yaml
+card_mod:
+  style: |
+    ha-card {
+      {% if (states.binary_sensor | selectattr('entity_id','search','_needs_attention') | selectattr('state','eq','on') | list | length) > 0 %}
+      animation: mr-flash 1.2s ease-in-out infinite;
+      {% endif %}
+    }
+    @keyframes mr-flash {
+      0%, 100% { background-color: var(--card-background-color); }
+      50% { background-color: rgba(244, 67, 54, 0.55); }
+    }
+```
+
+For care settings, a **physical** flash is even better: trigger a lamp or siren
+off the `needs_attention` sensor so the alert is visible from across the room.
+
 ## How marking works (the contract)
 
 - The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `notify_service` attributes. Per patient it also publishes two binary sensors:
@@ -147,6 +168,13 @@ as switch attributes that the companion automations read.
 
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
+
+## Acknowledgements
+
+The red/green "all OK / attention needed" status panel, the flashing alert, and
+the aggregate-status idea were suggested by Home Assistant Community user
+**IOT7712**. Thanks for the thoughtful feature requests, especially the focus on
+a reliable, glanceable, fail-safe indicator for care settings.
 
 ## License
 
