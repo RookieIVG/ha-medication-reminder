@@ -1,15 +1,16 @@
 # Companion automations for the Medication Reminder integration.
 #
 # The integration creates a switch per dose (on = given today), handles the
-# daily reset, and stores each patient's notify target. These automations do the
-# reminders, nagging, and missed-dose escalation by reading EVERY dose switch's
-# attributes (patient, dose_time, medications, notify_service). Add a patient or
-# dose in the UI and these pick it up automatically; no edits needed here.
+# daily reset, and stores each patient's settings (notify target, nag window,
+# nag interval). These automations do the reminders, nagging, and missed-dose
+# escalation by reading EVERY dose switch's attributes. Add a patient or dose in
+# the UI, or change a patient's settings, and these pick it up automatically; no
+# edits needed here.
 #
-# Cadence: reminders fire on a 5-minute tick (so the first ping is prompt),
-# re-nag roughly every nag_interval minutes, and escalate once at the window-end.
-# Each patient's reminders go to the notify target chosen in the UI
-# (state_attr notify_service); default_notify is only a fallback.
+# Cadence: reminders fire on a 5-minute tick (prompt first ping), re-nag every
+# patient's `nag_interval` minutes, and escalate once at the window-end
+# (`nag_minutes`). Each patient's reminders go to the notify target chosen in the
+# UI (state_attr notify_service); the defaults below are only fallbacks.
 
 - id: med_reminder
   alias: "Medication - Reminders & missed-dose escalation"
@@ -17,8 +18,6 @@
     - platform: time_pattern
       minutes: "/5"
   variables:
-    nag_minutes: 45        # how long to keep reminding after dose time
-    nag_interval: 15       # re-remind roughly every this many minutes
     default_notify: caretakers
   action:
     - repeat:
@@ -35,6 +34,8 @@
               patient: "{{ state_attr(ent, 'patient') }}"
               meds: "{{ state_attr(ent, 'medications') }}"
               notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
+              nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
+              nag_interval: "{{ state_attr(ent, 'nag_interval') | int(15) }}"
               mins_since: "{{ (now() - today_at(dtime)).total_seconds() / 60 }}"
               clock: "{{ as_timestamp(today_at(dtime)) | timestamp_custom('%-I:%M %p') }}"
           - choose:
