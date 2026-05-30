@@ -25,6 +25,7 @@ auto-created entities? Use this.
 ## What it does
 
 - 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
+- 🗓️ **Flexible scheduling:** each dose can be daily or limited to specific days of the week (e.g. Mondays only, or Mon/Wed/Fri). It only reminds and counts on its scheduled days.
 - 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
 - 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.
 - ♻️ **Daily reset:** every dose flips back to "not given" at 00:01.
@@ -140,6 +141,31 @@ card_mod:
 For care settings, a **physical** flash is even better: trigger a lamp or siren
 off the `needs_attention` sensor so the alert is visible from across the room.
 
+### Schedule overview
+
+A card that lists each patient's full schedule (every dose, time, medications,
+and which days it applies), not just today. Auto-discovers all patients, respects
+each one's 12h/24h setting, and shows "Daily" or the specific days. Native
+markdown card, no HACS needed:
+
+```yaml
+type: markdown
+content: |-
+  ## 📋 Medication schedule
+  {% set meds = states.switch | selectattr('attributes.medications','defined') | list %}
+  {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
+  {% for p in (meds | map(attribute='attributes.patient') | unique | list | sort) %}
+  {% set pdoses = meds | selectattr('attributes.patient','eq',p) | sort(attribute='attributes.dose_time') | list %}
+  {% set ptype = pdoses[0].attributes.patient_type | default('person') %}
+  ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ p }}
+  {% for d in pdoses %}
+  {%- set days = d.attributes.days or week %}
+  {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%-I:%M %p' %}
+  - **{{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }}** {{ d.attributes.medications }} ({{ 'Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) }})
+  {%- endfor %}
+  {% endfor %}
+```
+
 ## How marking works (the contract)
 
 - The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `days` / `notify_service` attributes (a dose is only reminded, counted, or flagged overdue on its scheduled `days`). Per patient it also publishes two binary sensors:
@@ -163,7 +189,6 @@ as switch attributes that the companion automations read.
 
 ## Roadmap
 
-- Day-of-week / weekly dose scheduling (e.g. a dose only on Mondays, or Mon/Wed/Fri).
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
 
