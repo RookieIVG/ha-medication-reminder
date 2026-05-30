@@ -1,0 +1,58 @@
+# Medication Reminder - dashboard card.
+#
+# A summary (X/Y given today, what's still pending, and what's been given and
+# when) plus a card that auto-includes every dose switch the integration
+# creates. All times shown in 12-hour format. Add this as a manual/YAML card on
+# a dashboard.
+#
+# The auto-entities card needs the HACS frontend card "auto-entities"
+# (https://github.com/thomasloven/lovelace-auto-entities). No HACS? See the
+# plain-entities note at the bottom.
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |-
+      {% set meds = states.switch | selectattr('attributes.medications','defined') | list %}
+      {% set given = meds | selectattr('state','eq','on') | list %}
+      {% set pending = meds | selectattr('state','eq','off') | list | sort(attribute='name') %}
+      ### 💊 Doses today: {{ given|length }}/{{ meds|length }} given
+      {% if pending|length == 0 -%}
+      ✅ All doses given for today.
+      {%- else -%}
+      **Still to give:**
+      {% for s in pending %}
+      - ⏳ {{ s.attributes.patient }} {{ as_timestamp(today_at(s.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} ({{ s.attributes.medications }})
+      {%- endfor %}
+      {%- endif %}
+      {% if given|length > 0 %}
+
+      **Given:**
+      {% for s in given | sort(attribute='last_changed') %}
+      - ✅ {{ s.attributes.patient }} {{ as_timestamp(today_at(s.attributes.dose_time)) | timestamp_custom('%-I:%M %p') }} at {{ as_timestamp(s.last_changed) | timestamp_custom('%-I:%M %p') }}
+      {%- endfor %}
+      {% endif %}
+  - type: custom:auto-entities
+    card:
+      type: entities
+      title: 💊 Medication
+      show_header_toggle: false
+    filter:
+      include:
+        - entity_id: "switch.*"
+          attributes:
+            medications: "*"
+    sort:
+      method: friendly_name
+
+# ---------------------------------------------------------------------------
+# No HACS? Replace the auto-entities card above with a plain entities card and
+# list your dose switches manually (find entity_ids in Developer Tools -> States):
+#
+#   - type: entities
+#     title: 💊 Medication
+#     show_header_toggle: false
+#     entities:
+#       - switch.kaupo_1_59_pm
+#       - switch.kali_1_59_pm
+# ---------------------------------------------------------------------------
