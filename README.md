@@ -193,6 +193,7 @@ as switch attributes that the companion automations read.
 
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
+- **Supply & refill tracking**: per-medication "doses remaining" that decrements as doses are marked given, a low-stock status (red, like the attention panel) at a configurable threshold, an estimated run-out date computed from the schedule, and an optional refill reminder. (Idea from community member Tadies, who built it on their dashboard with counter helpers.)
 
 ## Acknowledgements
 
