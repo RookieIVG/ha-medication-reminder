@@ -45,7 +45,7 @@ cards:
       {% endfor %}
       {% set given = ns.meds | selectattr('state','eq','on') | list %}
       {% set pending = ns.meds | selectattr('state','eq','off') | list | sort(attribute='name') %}
-      ### 🔵 Doses today: {{ given|length }}/{{ ns.meds|length }} given
+      ### 💊 Doses today: {{ given|length }}/{{ ns.meds|length }} given
       {% if ns.meds|length == 0 -%}
       No doses scheduled today.
       {%- elif pending|length == 0 -%}
@@ -120,7 +120,7 @@ cards:
       {% for p in (meds | map(attribute='attributes.patient') | unique | list | sort) %}
       {% set pdoses = meds | selectattr('attributes.patient','eq',p) | sort(attribute='attributes.dose_time') | list %}
       {% set ptype = pdoses[0].attributes.patient_type | default('person') %}
-      ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'🔵') }} {{ p }}
+      ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ p }}
       {% for d in pdoses %}
       {%- set days = d.attributes.days or week %}
       {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%-I:%M %p' %}
