@@ -50,7 +50,7 @@ fi
 
 # Make this integration visible to HA via custom_components.
 mkdir -p "${CONFIG_DIR}/custom_components"
-ln -sf "${PWD}/custom_components/medication_reminder" \
+ln -sfn "${PWD}/custom_components/medication_reminder" \
        "${CONFIG_DIR}/custom_components/medication_reminder"
 
 # Run Home Assistant (Ctrl+C to stop).
