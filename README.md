@@ -234,6 +234,7 @@ once-a-day refill reminder to the patient's notify target for anything low.
 
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
+- Over-dose guard: an optional minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. (Idea from community member IOT7712.)
 
 ## Acknowledgements
 
