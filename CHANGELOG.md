@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-06-01
+### Added
+- On/off cycle schedules (e.g. 21 days on / 7 days off), for cyclic regimens like oral contraceptives or cyclic HRT. When adding a dose, choose schedule type "On/off cycle", set the days on and days off, and a start date; the dose is due through the on-stretch and skipped through the off-stretch, repeating. Exposed on each dose switch as `cycle_on` / `cycle_off`, and honoured by the status sensors, supply run-out estimate, companion automations, and dashboard via the shared `is_due` rule.
+- One-tap refill button per tracked supply (`button.<patient>_<med>_refill`). Pressing it restocks that medication to its configured refill amount instead of editing the number by hand. It fires a `medication_reminder_supply_refill` event that the supply number listens for.
+- Test suite and CI. A `tests/` directory with pytest unit tests for the schedule logic (day-of-week, every-N-days, on/off cycle, and run-out cadence), plus GitHub Actions workflows running pytest and hassfest on every push and pull request.
+
 ## [0.11.2] - 2026-06-01
 ### Fixed
 - Doses marked given before 0.11.1 (which have no stored give-time) no longer drift to the restart time on every reboot. On restore, a given dose with no recorded `given_at` now adopts its last known change time and keeps it, so the dashboard's "Already given at ..." freezes instead of changing each restart. Doses marked given from 0.11.1 onward already keep their exact give-time.

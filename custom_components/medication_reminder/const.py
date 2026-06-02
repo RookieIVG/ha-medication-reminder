@@ -8,6 +8,8 @@ DOMAIN = "medication_reminder"
 # Events fired on the HA bus when a dose is marked given / un-marked.
 EVENT_DOSE_GIVEN = f"{DOMAIN}_dose_given"
 EVENT_DOSE_UNDONE = f"{DOMAIN}_dose_undone"
+# Fired when a refill button is pressed; the matching supply restocks to full.
+EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
 CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
@@ -21,10 +23,12 @@ CONF_NAG_MINUTES = "nag_minutes"
 CONF_NAG_INTERVAL = "nag_interval"
 CONF_TIME_FORMAT = "time_format"
 
-# Per-dose schedule type and its interval settings.
+# Per-dose schedule type and its interval / cycle settings.
 CONF_SCHEDULE_TYPE = "schedule_type"
 CONF_INTERVAL_DAYS = "interval_days"
 CONF_ANCHOR_DATE = "anchor_date"
+CONF_CYCLE_ON = "cycle_on"
+CONF_CYCLE_OFF = "cycle_off"
 
 # Supply / refill tracking (per medication).
 CONF_SUPPLIES = "supplies"
@@ -43,8 +47,11 @@ DEFAULT_DAYS = WEEKDAYS  # every day = daily
 # Dose schedule types.
 SCHEDULE_WEEKDAYS = "weekdays"  # on chosen days of the week (default)
 SCHEDULE_INTERVAL = "interval"  # every N days from an anchor date
+SCHEDULE_CYCLE = "cycle"  # X days on / Y days off from an anchor date
 DEFAULT_SCHEDULE_TYPE = SCHEDULE_WEEKDAYS
 DEFAULT_INTERVAL_DAYS = 2
+DEFAULT_CYCLE_ON = 21
+DEFAULT_CYCLE_OFF = 7
 DEFAULT_RESET_TIME = "00:01:00"
 DEFAULT_NAG_MINUTES = 45
 DEFAULT_NAG_INTERVAL = 15
@@ -103,6 +110,20 @@ def _interval_n(data):
     return max(n, 1)
 
 
+def _cycle_days(data):
+    """The (on_days, off_days) for an on/off cycle (on >= 1, off >= 0)."""
+
+    def _n(key, default, low):
+        try:
+            v = data.get(key)
+            v = int(v if v is not None else default)
+        except (TypeError, ValueError):
+            v = default
+        return max(v, low)
+
+    return _n(CONF_CYCLE_ON, DEFAULT_CYCLE_ON, 1), _n(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF, 0)
+
+
 def is_due(data, on_date):
     """Whether a dose is scheduled on `on_date` (a datetime.date).
 
@@ -121,6 +142,15 @@ def is_due(data, on_date):
         if on_date < anchor:
             return False
         return (on_date - anchor).days % n == 0
+    if stype == SCHEDULE_CYCLE:
+        on_days, off_days = _cycle_days(data)
+        period = on_days + off_days
+        anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
+        if anchor is None:
+            return on_date.toordinal() % period < on_days
+        if on_date < anchor:
+            return False
+        return (on_date - anchor).days % period < on_days
     days = data.get(CONF_DAYS) or WEEKDAYS
     return WEEKDAYS[on_date.weekday()] in days
 
@@ -130,5 +160,8 @@ def doses_per_week(data):
     stype = data.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
     if stype == SCHEDULE_INTERVAL:
         return 7.0 / _interval_n(data)
+    if stype == SCHEDULE_CYCLE:
+        on_days, off_days = _cycle_days(data)
+        return 7.0 * on_days / (on_days + off_days)
     days = data.get(CONF_DAYS) or WEEKDAYS
     return float(len(days))

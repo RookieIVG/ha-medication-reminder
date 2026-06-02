@@ -16,6 +16,8 @@ from homeassistant.util import slugify
 
 from .const import (
     CONF_ANCHOR_DATE,
+    CONF_CYCLE_OFF,
+    CONF_CYCLE_ON,
     CONF_DAYS,
     CONF_DOSES,
     CONF_INTERVAL_DAYS,
@@ -29,6 +31,8 @@ from .const import (
     CONF_SCHEDULE_TYPE,
     CONF_TIME,
     CONF_TIME_FORMAT,
+    DEFAULT_CYCLE_OFF,
+    DEFAULT_CYCLE_ON,
     DEFAULT_DAYS,
     DEFAULT_INTERVAL_DAYS,
     DEFAULT_NAG_INTERVAL,
@@ -136,6 +140,9 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         # Schedule type: weekdays (default) or every-N-days from an anchor date.
         self._schedule_type = dose.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
         self._interval_days = int(dose.get(CONF_INTERVAL_DAYS) or DEFAULT_INTERVAL_DAYS)
+        self._cycle_on = int(dose.get(CONF_CYCLE_ON) or DEFAULT_CYCLE_ON)
+        _off = dose.get(CONF_CYCLE_OFF)
+        self._cycle_off = int(_off if _off is not None else DEFAULT_CYCLE_OFF)
         self._anchor_date = dose.get(CONF_ANCHOR_DATE) or ""
         # When the dose was last marked given (ISO), persisted across restarts.
         self._given_at: str | None = None
@@ -171,6 +178,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             CONF_DAYS: self._days,
             CONF_INTERVAL_DAYS: self._interval_days,
             CONF_ANCHOR_DATE: self._anchor_date,
+            CONF_CYCLE_ON: self._cycle_on,
+            CONF_CYCLE_OFF: self._cycle_off,
         }
 
     def _scheduled_today(self) -> bool:
@@ -189,6 +198,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "schedule_type": self._schedule_type,
             "interval_days": self._interval_days,
             "anchor_date": self._anchor_date,
+            "cycle_on": self._cycle_on,
+            "cycle_off": self._cycle_off,
             "scheduled_today": self._scheduled_today(),
             "notify_service": self._notify,
             "nag_minutes": self._nag_minutes,

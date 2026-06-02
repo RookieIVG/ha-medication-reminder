@@ -41,6 +41,7 @@ from .const import (
     DEFAULT_SUPPLY_UNITS,
     DOMAIN,
     EVENT_DOSE_UNDONE,
+    EVENT_SUPPLY_REFILL,
     doses_per_week,
     is_due,
     meds_contains,
@@ -164,6 +165,19 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_DOSE_UNDONE, self._on_dose_undone)
         )
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_SUPPLY_REFILL, self._on_refill)
+        )
+
+    @callback
+    def _on_refill(self, event: Event) -> None:
+        """Restock to the refill-to amount when this supply's button is pressed."""
+        if (
+            event.data.get("patient") == self._patient
+            and event.data.get("medication") == self._med
+        ):
+            self._value = float(self._refill_to)
+            self.async_write_ha_state()
 
     @callback
     def _on_dose_undone(self, event: Event) -> None:

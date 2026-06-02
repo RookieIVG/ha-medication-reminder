@@ -161,7 +161,14 @@ cards:
               {%- set days = d.attributes.days or week %}
               {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%-I:%M %p' %}
               {%- set n = d.attributes.interval_days | int(2) %}
-              {%- set cadence = ('Daily' if n == 1 else 'Every ' ~ n ~ ' days') if d.attributes.schedule_type == 'interval' else ('Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', '))) %}
+              {%- set stype = d.attributes.schedule_type %}
+              {%- if stype == 'interval' %}
+              {%- set cadence = 'Daily' if n == 1 else 'Every ' ~ n ~ ' days' %}
+              {%- elif stype == 'cycle' %}
+              {%- set cadence = (d.attributes.cycle_on | int(21)) ~ ' on / ' ~ (d.attributes.cycle_off | int(7)) ~ ' off' %}
+              {%- else %}
+              {%- set cadence = 'Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
+              {%- endif %}
               - **{{ as_timestamp(today_at(d.attributes.dose_time)) | timestamp_custom(fmt) }}** {{ d.attributes.medications }} ({{ cadence }})
               {%- endfor %}
               {% endfor %}

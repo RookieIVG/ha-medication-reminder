@@ -13,6 +13,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_ANCHOR_DATE,
+    CONF_CYCLE_OFF,
+    CONF_CYCLE_ON,
     CONF_DAYS,
     CONF_DOSES,
     CONF_INTERVAL_DAYS,
@@ -32,6 +34,8 @@ from .const import (
     CONF_SUPPLY_UNITS,
     CONF_TIME,
     CONF_TIME_FORMAT,
+    DEFAULT_CYCLE_OFF,
+    DEFAULT_CYCLE_ON,
     DEFAULT_DAYS,
     DEFAULT_INTERVAL_DAYS,
     DEFAULT_NAG_INTERVAL,
@@ -45,6 +49,7 @@ from .const import (
     DEFAULT_SUPPLY_UNITS,
     DEFAULT_TIME_FORMAT,
     DOMAIN,
+    SCHEDULE_CYCLE,
     SCHEDULE_INTERVAL,
 )
 
@@ -117,6 +122,7 @@ def _schedule_type_selector() -> selector.SelectSelector:
             options=[
                 {"value": "weekdays", "label": "On chosen days of the week"},
                 {"value": "interval", "label": "Every N days"},
+                {"value": "cycle", "label": "On/off cycle (X days on, Y days off)"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
@@ -129,6 +135,19 @@ def _interval_selector() -> selector.NumberSelector:
         selector.NumberSelectorConfig(
             min=1,
             max=60,
+            step=1,
+            mode=selector.NumberSelectorMode.BOX,
+            unit_of_measurement="days",
+        )
+    )
+
+
+def _cycle_selector(low: int) -> selector.NumberSelector:
+    """Whole-number box for an on/off cycle's day counts."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=low,
+            max=365,
             step=1,
             mode=selector.NumberSelectorMode.BOX,
             unit_of_measurement="days",
@@ -235,8 +254,9 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         """Add one dose: a time, the medications, and how it repeats.
 
         Schedule type "weekdays" uses the days picker (the default, unchanged
-        behaviour); "interval" uses every-N-days from a start date. The fields
-        for the other type are simply ignored on save.
+        behaviour); "interval" uses every-N-days from a start date; "cycle"
+        uses X days on / Y days off from a start date. The fields for the other
+        types are simply ignored on save.
         """
         if user_input is not None:
             options = dict(self._entry.options)
@@ -250,6 +270,18 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             if stype == SCHEDULE_INTERVAL:
                 dose[CONF_INTERVAL_DAYS] = int(
                     user_input.get(CONF_INTERVAL_DAYS, DEFAULT_INTERVAL_DAYS)
+                )
+                dose[CONF_ANCHOR_DATE] = str(
+                    user_input.get(CONF_ANCHOR_DATE)
+                    or dt_util.now().date().isoformat()
+                )[:10]
+                dose[CONF_DAYS] = list(DEFAULT_DAYS)
+            elif stype == SCHEDULE_CYCLE:
+                dose[CONF_CYCLE_ON] = int(
+                    user_input.get(CONF_CYCLE_ON, DEFAULT_CYCLE_ON)
+                )
+                dose[CONF_CYCLE_OFF] = int(
+                    user_input.get(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF)
                 )
                 dose[CONF_ANCHOR_DATE] = str(
                     user_input.get(CONF_ANCHOR_DATE)
@@ -272,6 +304,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_INTERVAL_DAYS, default=DEFAULT_INTERVAL_DAYS
                 ): _interval_selector(),
+                vol.Optional(
+                    CONF_CYCLE_ON, default=DEFAULT_CYCLE_ON
+                ): _cycle_selector(1),
+                vol.Optional(
+                    CONF_CYCLE_OFF, default=DEFAULT_CYCLE_OFF
+                ): _cycle_selector(0),
                 vol.Optional(
                     CONF_ANCHOR_DATE, default=dt_util.now().date().isoformat()
                 ): selector.DateSelector(),
