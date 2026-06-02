@@ -21,6 +21,8 @@ _spec.loader.exec_module(const)
 is_due = const.is_due
 doses_per_week = const.doses_per_week
 WEEKDAYS = const.WEEKDAYS
+split_medications = const.split_medications
+meds_contains = const.meds_contains
 
 # A known Monday, for weekday tests that don't hardcode the mapping.
 MON = date(2026, 6, 1)
@@ -153,3 +155,33 @@ def test_dpw_interval_every_two():
 
 def test_dpw_interval_every_seven():
     assert abs(doses_per_week({"schedule_type": "interval", "interval_days": 7}) - 1.0) < 1e-9
+
+
+# --- Medication matching (supply decrement, refill, repairs) ----------------
+
+def test_split_medications_separators():
+    assert split_medications("Med A & Med B") == ["Med A", "Med B"]
+    assert split_medications("Med A, Med B + Med C / Med D") == ["Med A", "Med B", "Med C", "Med D"]
+
+
+def test_split_medications_empty():
+    assert split_medications("") == []
+    assert split_medications(None) == []
+
+
+def test_meds_contains_match():
+    assert meds_contains("Med A & Med B", "Med B") is True
+    assert meds_contains("Med A", "Med A") is True
+
+
+def test_meds_contains_no_match():
+    assert meds_contains("Med A & Med B", "Med C") is False
+
+
+def test_meds_contains_case_insensitive():
+    assert meds_contains("med a", "Med A") is True
+
+
+def test_meds_contains_empty_is_false():
+    assert meds_contains("Med A", "") is False
+    assert meds_contains("", "Med A") is False

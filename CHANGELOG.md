@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-06-02
+### Added
+- Next-dose sensor per patient (`sensor.<patient>_next_dose`, device class `timestamp`): the time of the soonest upcoming dose, computed from each dose's schedule (any schedule type). Handy for dashboards and "remind me before" automations; its attributes include the medications for that dose.
+- Medication calendar per patient (`calendar.<patient>_medication`): a read-only calendar with one event per due dose, which makes the every-N-days and on/off-cycle schedules easy to see laid out over the weeks.
+- Downloadable diagnostics for a patient entry (config plus the current state of every entity it created), to make supporting issues easier.
+- Repairs warning when a tracked supply's medication matches no dose, so it would never decrement. It appears under Settings, Repairs and clears itself once you fix the spelling or remove the supply.
+
 ## [0.12.0] - 2026-06-01
 ### Added
 - On/off cycle schedules (e.g. 21 days on / 7 days off), for cyclic regimens like oral contraceptives or cyclic HRT. When adding a dose, choose schedule type "On/off cycle", set the days on and days off, and a start date; the dose is due through the on-stretch and skipped through the off-stretch, repeating. Exposed on each dose switch as `cycle_on` / `cycle_off`, and honoured by the status sensors, supply run-out estimate, companion automations, and dashboard via the shared `is_due` rule.

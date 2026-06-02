@@ -1,4 +1,10 @@
 {
+  "issues": {
+    "supply_no_matching_dose": {
+      "title": "Tracked supply has no matching dose",
+      "description": "The supply \"{medication}\" for {patient} does not match the medications in any dose, so it will never decrement. Check the spelling in Configure (it must match a dose's medication exactly), or remove the supply."
+    }
+  },
   "config": {
     "step": {
       "user": {
