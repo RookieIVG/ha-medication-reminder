@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Documentation
+- New "Safety & fail-safes" section in the README summarizing the integration's safety behaviour (fail-safe overdue detection, missed-dose escalation, the early-dose warning, reversible marking, restart-safe state, supply run-out protection, the Repairs misconfiguration check, and off-day alarm suppression), plus an explicit note that every guard warns rather than blocks. Added a matching "Fail-safe by design" highlight. No functional change.
+
 ## [0.13.0] - 2026-06-02
 ### Added
 - Next-dose sensor per patient (`sensor.<patient>_next_dose`, device class `timestamp`): the time of the soonest upcoming dose, computed from each dose's schedule (any schedule type). Handy for dashboards and "remind me before" automations; its attributes include the medications for that dose.

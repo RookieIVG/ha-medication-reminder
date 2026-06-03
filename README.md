@@ -32,6 +32,7 @@ auto-created entities? Use this.
 - **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, or an on/off cycle (e.g. 21 on / 7 off), 12h or 24h display.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed per patient.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
+- **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## What it does
 
@@ -292,6 +293,44 @@ A medication shared across several doses (e.g. one given morning and night) draw
 from a single pool; dose `meds` strings are split on `& , + /` so each medication
 is tracked individually. The companion `med_supply_low` automation sends a
 once-a-day refill reminder to the patient's notify target for anything low.
+
+## Safety & fail-safes
+
+This is a reminder aid, **not** a medical device (see the alpha note up top), but
+it is built to fail toward "tell the caretaker" rather than stay quiet. The
+safety-relevant behaviours:
+
+- **Fail-safe overdue detection.** `binary_sensor.<patient>_needs_attention`
+  (device class `problem`) goes red when a dose is past its time by the nag window
+  and still not given. It re-evaluates on a 60-second timer, so it trips on elapsed
+  time alone, and when state is uncertain it errs toward red. Wire it to a light,
+  siren, or pager for an alert you can see across the room.
+- **Missed-dose escalation.** Reminders nag every 15 min for 45 min, then escalate
+  once as a time-sensitive "missed" alert, so an ignored reminder does not silently
+  disappear.
+- **Early-dose / soft over-dose warning.** Marking a dose well before its scheduled
+  time warns the caretaker and offers an **undo** button. The switch reports
+  `minutes_early` on the `medication_reminder_dose_given` event so automations can
+  react.
+- **Reversible marking.** Un-marking a dose fires `medication_reminder_dose_undone`
+  and restores the supply count, so an accidental "given" tap is fully undone, not
+  left as a permanent miscount.
+- **Restart-safe state.** Dose state and the `given_at` time survive Home Assistant
+  restarts, so a reboot cannot silently lose "already given" and invite a double
+  dose.
+- **Supply run-out protection.** `binary_sensor.<patient>_supplies_low` (device
+  class `problem`) flags low stock at your threshold, with doses-left and an
+  estimated run-out date, plus a once-a-day refill reminder.
+- **Misconfiguration check.** If a tracked supply's medication matches no dose (so
+  it would never decrement), the integration raises a **Repairs** warning.
+- **No false alarms on off-days.** Overdue and missed only fire on days a dose is
+  actually due (`scheduled_today` honours day-of-week, every-N-days, and on/off
+  cycles), to avoid alarm fatigue.
+
+**By design, every guard warns, it never blocks.** The integration will not stop
+you marking a dose early or twice; it surfaces the risk and leaves the decision to
+the caretaker. A fuller over-dose guard (a minimum interval between doses and a
+max-per-day cap) is on the [Roadmap](#roadmap).
 
 ## Roadmap
 
