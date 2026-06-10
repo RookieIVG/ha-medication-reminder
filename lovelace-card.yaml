@@ -2,12 +2,13 @@
 #
 # Drop-in: this needs no editing. It discovers every patient and dose
 # automatically, so adding, renaming, or removing a patient just updates it.
-# Five parts:
+# Six parts:
 #   1. a red/green status panel (from the needs_attention sensors)
 #   2. a summary of TODAY's scheduled doses (given / still to give, with times)
 #   3. one combined "Mark given" card with every dose due today (tap to mark)
-#   4. one combined supplies card (units on hand, shown only if you track any)
-#   5. a per-patient schedule overview (every dose, time, medications, and days)
+#   4. an "As needed (PRN)" card with a Log dose button per as-needed med
+#   5. one combined supplies card (units on hand, shown only if you track any)
+#   6. a per-patient schedule overview (every dose, time, medications, and days)
 #
 # Needs two HACS cards:
 #   - auto-entities  https://github.com/thomasloven/lovelace-auto-entities
@@ -118,6 +119,28 @@ cards:
     sort:
       method: name
 
+  # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply).
+  # Hidden if you have no PRN doses.
+  - type: custom:auto-entities
+    show_empty: false
+    card:
+      type: entities
+      title: As needed (PRN)
+      show_header_toggle: false
+      card_mod:
+        style: |
+          ha-card {
+            --state-icon-color: #2196f3;
+            --paper-item-icon-color: #2196f3;
+          }
+    filter:
+      template: >
+        {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+        {{ s.entity_id }}
+        {% endfor %}
+    sort:
+      method: name
+
   # 4. All supplies on hand, auto-discovers, hidden if none tracked
   - type: custom:auto-entities
     show_empty: false
@@ -158,6 +181,8 @@ cards:
       {%- set cadence = 'Daily' if n == 1 else 'Every ' ~ n ~ ' days' %}
       {%- elif stype == 'cycle' %}
       {%- set cadence = (d.attributes.cycle_on | int(21)) ~ ' on / ' ~ (d.attributes.cycle_off | int(7)) ~ ' off' %}
+      {%- elif stype == 'prn' %}
+      {%- set cadence = 'As needed' %}
       {%- else %}
       {%- set cadence = 'Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
       {%- endif %}

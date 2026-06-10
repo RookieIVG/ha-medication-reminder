@@ -126,6 +126,27 @@ cards:
             sort:
               method: name
 
+          # As-needed (PRN) meds: tap "Log dose" to record one. Hidden if none.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: As needed (PRN)
+              show_header_toggle: false
+              card_mod:
+                style: |
+                  ha-card {
+                    --state-icon-color: #2196f3;
+                    --paper-item-icon-color: #2196f3;
+                  }
+            filter:
+              template: >
+                {% for s in states.button if s.name and 'Log ' in s.name and s.name.endswith('dose') %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
+
       # RIGHT column: supplies + schedule
       - type: vertical-stack
         cards:
@@ -169,6 +190,8 @@ cards:
               {%- set cadence = 'Daily' if n == 1 else 'Every ' ~ n ~ ' days' %}
               {%- elif stype == 'cycle' %}
               {%- set cadence = (d.attributes.cycle_on | int(21)) ~ ' on / ' ~ (d.attributes.cycle_off | int(7)) ~ ' off' %}
+              {%- elif stype == 'prn' %}
+              {%- set cadence = 'As needed' %}
               {%- else %}
               {%- set cadence = 'Daily' if days|length == 7 else (week | select('in', days) | map('capitalize') | join(', ')) %}
               {%- endif %}
