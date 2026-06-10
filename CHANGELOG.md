@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-06-09
+### Added
+- New **"As needed (PRN)"** dose schedule type, for medications taken only when needed (pain meds, rescue inhalers, etc.). A PRN dose never reminds, nags, or shows as overdue, and stays off the next-dose sensor and calendar.
+- A **"Log dose" button** on each PRN dose. Pressing it records one dose and decrements that medication's tracked supply, with no once-per-day limit, so meds taken several times a day are each counted and refill / run-out tracking stays accurate. (PRN doses have no schedule, so the daily on/off switch does not count them.)
+
 ## [0.13.1] - 2026-06-02
 ### Added
 - Inline hint on the dose "Medications" field, explaining the separators (&, +, /, or a comma) used to track each medication individually.

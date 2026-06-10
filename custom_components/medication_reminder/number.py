@@ -40,6 +40,7 @@ from .const import (
     DEFAULT_SUPPLY_THRESHOLD,
     DEFAULT_SUPPLY_UNITS,
     DOMAIN,
+    EVENT_DOSE_LOGGED,
     EVENT_DOSE_UNDONE,
     EVENT_SUPPLY_REFILL,
     doses_per_week,
@@ -169,6 +170,25 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_SUPPLY_REFILL, self._on_refill)
         )
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOSE_LOGGED, self._on_dose_logged)
+        )
+
+    @callback
+    def _on_dose_logged(self, event: Event) -> None:
+        """Decrement once for an as-needed (PRN) dose logged via its button.
+
+        Unlike the switch-driven decrement this has no is_due gate and no
+        once-per-day guard, so a PRN med taken several times a day is counted
+        on every press. There is no automatic undo; adjust the supply number
+        directly if a press was a mistake."""
+        if event.data.get("patient") != self._patient:
+            return
+        meds = event.data.get("medications")
+        if meds is None or not meds_contains(meds, self._med):
+            return
+        self._value = max(0.0, self._value - self._per_dose)
+        self.async_write_ha_state()
 
     @callback
     def _on_refill(self, event: Event) -> None:

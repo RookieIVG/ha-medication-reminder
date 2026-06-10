@@ -8,6 +8,7 @@ DOMAIN = "medication_reminder"
 # Events fired on the HA bus when a dose is marked given / un-marked.
 EVENT_DOSE_GIVEN = f"{DOMAIN}_dose_given"
 EVENT_DOSE_UNDONE = f"{DOMAIN}_dose_undone"
+EVENT_DOSE_LOGGED = f"{DOMAIN}_dose_logged"  # one as-needed (PRN) dose taken
 # Fired when a refill button is pressed; the matching supply restocks to full.
 EVENT_SUPPLY_REFILL = f"{DOMAIN}_supply_refill"
 
@@ -48,6 +49,7 @@ DEFAULT_DAYS = WEEKDAYS  # every day = daily
 SCHEDULE_WEEKDAYS = "weekdays"  # on chosen days of the week (default)
 SCHEDULE_INTERVAL = "interval"  # every N days from an anchor date
 SCHEDULE_CYCLE = "cycle"  # X days on / Y days off from an anchor date
+SCHEDULE_PRN = "prn"  # as-needed: no schedule, no reminders, log manually when taken
 DEFAULT_SCHEDULE_TYPE = SCHEDULE_WEEKDAYS
 DEFAULT_INTERVAL_DAYS = 2
 DEFAULT_CYCLE_ON = 21
@@ -133,6 +135,10 @@ def is_due(data, on_date):
     doses keep working unchanged.
     """
     stype = data.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
+    if stype == SCHEDULE_PRN:
+        # As-needed: never on a schedule, so it is never "due" and never nags.
+        # Doses are still logged manually (which decrements supply).
+        return False
     if stype == SCHEDULE_INTERVAL:
         n = _interval_n(data)
         anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
@@ -158,6 +164,9 @@ def is_due(data, on_date):
 def doses_per_week(data):
     """Average times per week a dose fires, for the run-out estimate."""
     stype = data.get(CONF_SCHEDULE_TYPE) or SCHEDULE_WEEKDAYS
+    if stype == SCHEDULE_PRN:
+        # No schedule, so no predictable weekly cadence to base a run-out on.
+        return 0.0
     if stype == SCHEDULE_INTERVAL:
         return 7.0 / _interval_n(data)
     if stype == SCHEDULE_CYCLE:

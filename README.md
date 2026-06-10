@@ -29,7 +29,7 @@ auto-created entities? Use this.
 - **Pets and people, all in the UI.** Add patients and their dose schedule from Settings, no YAML; entities auto-create per patient and survive restarts.
 - **Glanceable, fail-safe status.** A per-patient red/green "needs attention" sensor that trips on elapsed time alone and fails safe toward "problem", wire it to a panel, light, or siren.
 - **Supply & refill tracking.** Per-medication counts that decrement as doses are given, with doses-left, a run-out estimate, a low-stock red flag at your reorder threshold, and a refill reminder.
-- **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, or an on/off cycle (e.g. 21 on / 7 off), 12h or 24h display.
+- **Flexible scheduling.** Each dose daily, on specific days of the week, every N days, an on/off cycle (e.g. 21 on / 7 off), or as needed (PRN, no reminders), 12h or 24h display.
 - **Actionable reminders.** Nagging, missed-dose escalation, and a "Mark given" button from the notification, routed per patient.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
@@ -38,6 +38,7 @@ auto-created entities? Use this.
 
 - 🖱️ **UI configuration:** add a patient, choose who to notify, then add doses (a time + the medications) from Settings. No YAML for the schedule.
 - 🗓️ **Flexible scheduling:** each dose can be daily, limited to specific days of the week (e.g. Mondays only, or Mon/Wed/Fri), every N days from a start date (e.g. every other day), or an on/off cycle (e.g. 21 days on / 7 off). It only reminds and counts on the days it is due.
+- 💊 **As-needed (PRN) meds:** mark a dose "as needed" and it never reminds, nags, or shows as overdue, and it stays off the next-dose sensor and calendar (no schedule). Each PRN dose gets a **"Log dose" button**, press it every time you take the med (pain meds, rescue inhalers, etc., including several times a day) and it decrements that medication's supply, so refill and run-out tracking stay accurate.
 - 📅 **Next-dose sensor and calendar:** each patient gets a `sensor.<patient>_next_dose` (timestamp of the next upcoming dose) and a `calendar.<patient>_medication` that lays the schedule out as calendar events, handy for the every-N-days and on/off-cycle schedules.
 - 👥 **Per-patient notify target:** pick the person or group to remind for each patient in the UI (e.g. one dog's reminders to you, another's to a partner).
 - 🔀 **Auto-created entities:** each dose becomes a `switch` (on = given today), grouped under a device per patient.

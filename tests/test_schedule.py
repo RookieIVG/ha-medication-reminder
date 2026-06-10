@@ -139,6 +139,27 @@ def test_dpw_cycle_21_7():
     assert abs(doses_per_week(CYCLE) - (7.0 * 21 / 28)) < 1e-9  # 5.25
 
 
+# --- As needed (PRN) -------------------------------------------------------
+
+PRN = {"schedule_type": "prn"}
+
+
+def test_prn_never_due():
+    # As-needed meds are never on a schedule, so never "due" (no reminders).
+    for d in (date(2026, 6, 1), date(2026, 6, 2), date(2026, 12, 25), MON):
+        assert is_due(PRN, d) is False
+
+
+def test_prn_ignores_days():
+    # Even with day fields present, a PRN dose stays off-schedule.
+    assert is_due({"schedule_type": "prn", "days": WEEKDAYS}, MON) is False
+
+
+def test_dpw_prn_is_zero():
+    # No cadence, so no schedule-based run-out (number.py guards per_week <= 0).
+    assert doses_per_week(PRN) == 0.0
+
+
 # --- doses_per_week (run-out estimate cadence) -----------------------------
 
 def test_dpw_weekdays_is_len_days():

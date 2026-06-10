@@ -51,6 +51,7 @@ from .const import (
     DOMAIN,
     SCHEDULE_CYCLE,
     SCHEDULE_INTERVAL,
+    SCHEDULE_PRN,
 )
 
 
@@ -123,6 +124,7 @@ def _schedule_type_selector() -> selector.SelectSelector:
                 {"value": "weekdays", "label": "On chosen days of the week"},
                 {"value": "interval", "label": "Every N days"},
                 {"value": "cycle", "label": "On/off cycle (X days on, Y days off)"},
+                {"value": "prn", "label": "As needed (PRN) - no schedule, no reminders"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
@@ -255,7 +257,8 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
 
         Schedule type "weekdays" uses the days picker (the default, unchanged
         behaviour); "interval" uses every-N-days from a start date; "cycle"
-        uses X days on / Y days off from a start date. The fields for the other
+        uses X days on / Y days off from a start date; "prn" is as-needed with
+        no schedule (never reminds, logged manually). The fields for the other
         types are simply ignored on save.
         """
         if user_input is not None:
@@ -287,6 +290,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     user_input.get(CONF_ANCHOR_DATE)
                     or dt_util.now().date().isoformat()
                 )[:10]
+                dose[CONF_DAYS] = list(DEFAULT_DAYS)
+            elif stype == SCHEDULE_PRN:
+                # As needed: no schedule fields. days are ignored by is_due()
+                # for PRN, but keep the key present for a uniform dose shape.
                 dose[CONF_DAYS] = list(DEFAULT_DAYS)
             else:
                 dose[CONF_DAYS] = user_input.get(CONF_DAYS) or list(DEFAULT_DAYS)
