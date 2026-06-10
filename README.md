@@ -286,6 +286,12 @@ amount. Each tracked medication then gets:
 - `button.<patient>_<med>_refill` - a one-tap restock that sets the supply back to
   its configured refill amount, instead of editing the number by hand. It fires a
   `medication_reminder_supply_refill` event that the supply number listens for.
+- `button.<patient>_log_<meds>_dose` - only created for **as-needed (PRN)** doses.
+  Pressing it logs one dose and decrements the matching supply with **no
+  once-per-day limit**, so a med taken several times a day is counted each press.
+  It fires a `medication_reminder_dose_logged` event. PRN doses have no schedule,
+  so the daily on/off switch does not count them; this button is how their supply
+  tracks.
 - `binary_sensor.<patient>_supplies_low` (device class `problem`) - **red when any
   of that patient's supplies reaches its threshold**, with a `low` list of which
   medications are short.
@@ -338,7 +344,9 @@ max-per-day cap) is on the [Roadmap](#roadmap).
 - Optional in-integration notifications/nagging (so YAML companions become optional).
 - HACS default-store submission once validated.
 - Over-dose guard: a minimum interval between doses and a max-per-day cap, warning before a dose is marked given too soon or too often. An early-dose warning (a dose given before its scheduled time) shipped in 0.10.0 as a first step; the interval and daily cap remain. (Idea from community member IOT7712.)
-- More schedule types beyond day-of-week. Every-N-days shipped in 0.11.0 and on/off cycles (e.g. 21 on / 7 off) in 0.12.0, both using a start date and the shared `scheduled_today` attribute the sensors, automations, and dashboard all honour. Day-of-month / monthly remains. (Suggested by a community member.)
+- More schedule types beyond day-of-week. Every-N-days shipped in 0.11.0, on/off cycles (e.g. 21 on / 7 off) in 0.12.0, and as-needed (PRN, no schedule) in 0.14.0. Day-of-month / monthly remains. (Suggested by a community member.)
+- Edit an existing dose in place (e.g. fix its time) without removing and re-adding it. (Suggested by a community member.)
+- Per-medication detail: optional strength/mg, a dosage summary (e.g. "2 tablets twice a day"), and a full name separate from the short reminder name, plus a "current medications" summary view for handing a provider the "what" rather than the "when". (Suggested by a community member.)
 
 ## Acknowledgements
 
