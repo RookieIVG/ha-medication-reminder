@@ -17,7 +17,7 @@ This is the UI-driven sibling of the YAML package at
 Prefer pure YAML? Use that one. Want point-and-click dose management with
 auto-created entities? Use this.
 
-![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard.png?v=2)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard.png?v=3)
 
 > ⚠️ **Alpha software.** This is new and not yet widely tested. Validate it on
 > your own Home Assistant before relying on it, and keep a backup reminder method
@@ -169,9 +169,9 @@ same cards out as a full-width status banner above two columns, sized to fill a
 2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
 view section: add a section, set its width to 2, and paste it as a manual card.
 
-![Medication Reminder dashboard layouts](dashboardupdates.png)
+![Single-column dashboard layout](dashboard-1col.png)
 
-*The auto-discovering layout, single-column and the optional two-column variant.*
+*The auto-discovering single-column layout ([`lovelace-card.yaml`](lovelace-card.yaml)); the wide two-column variant is described just above.*
 
 ### Status panel (red/green, glanceable)
 
@@ -179,7 +179,7 @@ A simple "all OK / attention needed" panel for the top of a dashboard, driven by
 the `needs_attention` sensors. Green when nothing is overdue, red (with who and
 what) when something needs investigating. Native card, no HACS needed:
 
-![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard-attention-needed.png?v=2)
+![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard-attention-needed.png?v=3)
 
 ```yaml
 type: markdown
