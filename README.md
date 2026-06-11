@@ -38,14 +38,6 @@ auto-created entities? Use this.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
-## Why entities + YAML (not all-in-one, yet)
-
-The current versions deliberately keep the *notification* logic in battle-tested
-YAML automations while the integration owns the *config UI* and *entities*. That
-gives you the big win (no more hand-declared helpers, UI-managed schedule)
-without putting medication-critical notification code into brand-new, untested
-territory. A future version may move reminders into the integration itself.
-
 ## Installation
 
 ### 1. Install the integration (HACS custom repository)
@@ -247,17 +239,6 @@ content: |-
   {% endfor %}
 ```
 
-## How marking works (the contract)
-
-- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `days` / `schedule_type` / `interval_days` / `anchor_date` / `cycle_on` / `cycle_off` / `month_days` / `scheduled_today` / `given_at` / `notify_service` attributes (a dose is only reminded, counted, or flagged overdue when `scheduled_today` is true, which respects day-of-week, every-N-days, on/off-cycle, and monthly schedules). Per patient it also publishes two binary sensors:
-  - `binary_sensor.<patient>_all_doses_given` (patient-type icon) - on when all of that patient's doses are given today, with `total` / `given` / `remaining` / `pending` attributes.
-  - `binary_sensor.<patient>_needs_attention` (device class `problem`) - **red when a dose is overdue** (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, and fails safe toward "problem". Attributes: `overdue` / `overdue_count`.
-- It also publishes `sensor.<patient>_next_dose` (timestamp of the next upcoming dose, with the medications as an attribute) and `calendar.<patient>_medication` (the schedule as calendar events). The entry offers **downloadable diagnostics** on its device page, and raises a **Repairs** warning if a tracked supply's medication matches no dose (so it would never decrement).
-- The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
-- "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
-- To log a dose taken at a **different time** than now, call the `medication_reminder.mark_given` service (target the dose's switch) with a `given_at` time. The plain switch is "Take Now"; the service is the "Specify Time" equivalent. Correcting the time on an already-given dose just updates the timestamp (it does not re-warn or re-decrement supply).
-- When a dose is marked given, the switch fires a `medication_reminder_dose_given` event (with `patient`, `dose_time`, `medications`, `scheduled_today`, `minutes_early`, `notify_service`), so companion automations can react cleanly. The bundled `med_early_given` automation uses it to warn when a dose is marked given well before its scheduled time, with an "undo" button that turns the dose back off. Un-marking a dose fires `medication_reminder_dose_undone`, which restores that dose's supply count.
-
 ## Settings (per patient)
 
 Each patient has its own **Configure, Reminder settings** with:
@@ -315,6 +296,17 @@ from a single pool; dose `meds` strings are split on `& , + /` so each medicatio
 is tracked individually. The companion `med_supply_low` automation sends a
 once-a-day refill reminder to the patient's notify target for anything low.
 
+## How marking works (the contract)
+
+- The integration publishes `switch.*` entities carrying `patient` / `patient_type` / `dose_time` / `medications` / `days` / `schedule_type` / `interval_days` / `anchor_date` / `cycle_on` / `cycle_off` / `month_days` / `scheduled_today` / `given_at` / `notify_service` attributes (a dose is only reminded, counted, or flagged overdue when `scheduled_today` is true, which respects day-of-week, every-N-days, on/off-cycle, and monthly schedules). Per patient it also publishes two binary sensors:
+  - `binary_sensor.<patient>_all_doses_given` (patient-type icon) - on when all of that patient's doses are given today, with `total` / `given` / `remaining` / `pending` attributes.
+  - `binary_sensor.<patient>_needs_attention` (device class `problem`) - **red when a dose is overdue** (past its time by the nag window and still not given), green when all is well. It re-evaluates on a 60-second timer so it trips on elapsed time alone, and fails safe toward "problem". Attributes: `overdue` / `overdue_count`.
+- It also publishes `sensor.<patient>_next_dose` (timestamp of the next upcoming dose, with the medications as an attribute) and `calendar.<patient>_medication` (the schedule as calendar events). The entry offers **downloadable diagnostics** on its device page, and raises a **Repairs** warning if a tracked supply's medication matches no dose (so it would never decrement).
+- The companion reminder automation iterates those switches and routes each reminder to its `notify_service` / `nag_minutes` / `nag_interval`, so adding a dose or changing a patient's settings in the UI needs **no** automation edits.
+- "Mark given" flips the switch on; the daily reset flips all off at the configured reset time.
+- To log a dose taken at a **different time** than now, call the `medication_reminder.mark_given` service (target the dose's switch) with a `given_at` time. The plain switch is "Take Now"; the service is the "Specify Time" equivalent. Correcting the time on an already-given dose just updates the timestamp (it does not re-warn or re-decrement supply).
+- When a dose is marked given, the switch fires a `medication_reminder_dose_given` event (with `patient`, `dose_time`, `medications`, `scheduled_today`, `minutes_early`, `notify_service`), so companion automations can react cleanly. The bundled `med_early_given` automation uses it to warn when a dose is marked given well before its scheduled time, with an "undo" button that turns the dose back off. Un-marking a dose fires `medication_reminder_dose_undone`, which restores that dose's supply count.
+
 ## Safety & fail-safes
 
 This is a reminder aid, **not** a medical device (see the alpha note up top), but
@@ -352,6 +344,14 @@ safety-relevant behaviours:
 you marking a dose early or twice; it surfaces the risk and leaves the decision to
 the caretaker. A fuller over-dose guard (a minimum interval between doses and a
 max-per-day cap) is on the [Roadmap](#roadmap).
+
+## Why entities + YAML (not all-in-one, yet)
+
+The current versions deliberately keep the *notification* logic in battle-tested
+YAML automations while the integration owns the *config UI* and *entities*. That
+gives you the big win (no more hand-declared helpers, UI-managed schedule)
+without putting medication-critical notification code into brand-new, untested
+territory. A future version may move reminders into the integration itself.
 
 ## Roadmap
 
