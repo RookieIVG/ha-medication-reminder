@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Dashboards: the schedule overview now lists each patient's timed doses first (sorted by time) and groups as-needed (PRN) doses at the bottom of their block, instead of the as-needed ones floating to the top. Re-copy `lovelace-card.yaml` or `lovelace-card-2col.yaml` to pick this up. (Suggested by a community member.)
+
 ## [0.18.0] - 2026-06-10
 ### Added
 - As-needed (PRN) doses now track **how many were taken today**. Each PRN dose gains a `sensor.<patient>_<med>_doses_today` count that increments on every Log dose press (or `log_dose` call) and resets at the patient's daily reset time, restart-safe, so you can answer "how many doses of this have I had today?" at a glance. The bundled dashboards' "As needed (PRN)" card now shows it next to the Log dose button and last-taken time (re-copy the dashboard to pick it up). (Suggested by a community member.)

@@ -177,7 +177,8 @@ cards:
       {% set meds = states.switch | selectattr('attributes.medications','defined') | list %}
       {% set week = ['mon','tue','wed','thu','fri','sat','sun'] %}
       {% for p in (meds | map(attribute='attributes.patient') | unique | list | sort) %}
-      {% set pdoses = meds | selectattr('attributes.patient','eq',p) | sort(attribute='attributes.dose_time') | list %}
+      {% set _byp = meds | selectattr('attributes.patient','eq',p) | sort(attribute='attributes.dose_time') | list %}
+      {% set pdoses = (_byp | rejectattr('attributes.schedule_type','eq','prn') | list) + (_byp | selectattr('attributes.schedule_type','eq','prn') | list) %}
       {% set ptype = pdoses[0].attributes.patient_type | default('person') %}
       ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ p }}
       {% for d in pdoses %}
