@@ -7,3 +7,6 @@ venv/
 .idea/
 config/
 *.log
+
+# Brand assets staged for the home-assistant/brands repo (not part of this repo)
+brands/
