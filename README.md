@@ -1,4 +1,8 @@
-# 💊 Medication Reminder (Home Assistant integration)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/med-reminder.png" alt="Medication Reminder logo" width="180">
+</p>
+
+# Medication Reminder (Home Assistant integration)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
