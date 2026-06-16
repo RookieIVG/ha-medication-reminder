@@ -6,7 +6,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Status: alpha](https://img.shields.io/badge/status-alpha-red.svg)
+![Release](https://img.shields.io/github/v/release/magikh0e/ha-medication-reminder-hacs)
 
 [![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=magikh0e&repository=ha-medication-reminder-hacs&category=integration)
 
@@ -23,10 +23,9 @@ auto-created entities? Use this.
 
 ![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder-hacs/main/dashboard.png?v=3)
 
-> ⚠️ **Alpha software.** This is new and not yet widely tested. Validate it on
-> your own Home Assistant before relying on it, and keep a backup reminder method
-> until you trust it. It is a reminder aid, **not** a medical device. Confirm
-> dosing schedules with your doctor or vet.
+> ⚠️ **Important.** This is a reminder aid, **not** a medical device. Validate it
+> on your own Home Assistant and keep a backup reminder method until you trust it,
+> and confirm dosing schedules with your doctor or vet.
 
 **Jump to:** [Highlights](#highlights) · [Installation](#installation) · [Dashboard](#dashboard) · [Settings](#settings-per-patient) · [Supply & refill](#supply--refill-tracking) · [Safety](#safety--fail-safes) · [Roadmap](#roadmap)
 
@@ -357,7 +356,7 @@ notify target for anything low.
 
 ## Safety & fail-safes
 
-This is a reminder aid, **not** a medical device (see the alpha note up top), but
+This is a reminder aid, **not** a medical device (see the note up top), but
 it is built to fail toward "tell the caretaker" rather than stay quiet. The
 safety-relevant behaviours:
 
