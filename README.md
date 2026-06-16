@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/med-reminder.png" alt="Medication Reminder logo" width="180">
+  <img src="https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/med-reminder.png" alt="Medication Reminder logo" width="180">
 </p>
 
 # Medication Reminder (Home Assistant integration)
@@ -16,12 +16,14 @@ auto-creates a switch per dose (on = given today) and resets them daily. Pair it
 with the included companion automations for actionable, nagging, missed-dose
 reminders synced across every Companion app.
 
-This is the UI-driven sibling of the YAML package at
-[ha-medication-reminder-yaml](https://github.com/magikh0e/ha-medication-reminder-yaml).
-Prefer pure YAML? Use that one. Want point-and-click dose management with
-auto-created entities? Use this.
+This is the full-featured, actively developed version. A lighter
+[ha-medication-reminder-yaml](https://github.com/magikh0e/ha-medication-reminder-yaml)
+package covers the core reminder, nag, and missed-dose flow in pure YAML, but
+without the newer features here (UI-managed schedules, supply tracking, the
+as-needed/PRN tools, and the extra sensors and calendar). Prefer a YAML-only
+setup with no custom integration? Use that one; otherwise use this.
 
-![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard.png?v=3)
+![Medication Reminder dashboard](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard.png?v=3)
 
 > ⚠️ **Important.** This is a reminder aid, **not** a medical device. Validate it
 > on your own Home Assistant and keep a backup reminder method until you trust it,
@@ -131,7 +133,7 @@ They send a reminder when a dose is due and not given, nag every 15 minutes for
 
 ## Dashboard
 
-A dashboard is optional, but the bundled [`lovelace-card.yaml`](lovelace-card.yaml)
+A dashboard is optional, but the bundled [`lovelace-card.yaml`](dashboards/lovelace-card.yaml)
 is an auto-discovering, day-of-week-aware one that needs **no editing**: it finds
 every patient and dose automatically, so adding, renaming, or removing a patient
 just updates it.
@@ -151,20 +153,20 @@ colours; without card-mod the pills fall back to amber). Paste it as a manual
 card, no names or entity_ids to change. The standalone status panel is below if
 you only want that piece, and it needs no HACS cards at all.
 
-For a wide area, [`lovelace-card-2col.yaml`](lovelace-card-2col.yaml) lays the
+For a wide area, [`lovelace-card-2col.yaml`](dashboards/lovelace-card-2col.yaml) lays the
 same cards out as a full-width status banner above two columns, sized to fill a
 2-column-wide [Sections](https://www.home-assistant.io/dashboards/sections/)
 view section: add a section, set its width to 2, and paste it as a manual card.
 
-![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard-1col.png?v=2)
+![Single-column dashboard layout](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-1col.png?v=2)
 
-*The auto-discovering single-column layout ([`lovelace-card.yaml`](lovelace-card.yaml)); the wide two-column variant is described just above.*
+*The auto-discovering single-column layout ([`lovelace-card.yaml`](dashboards/lovelace-card.yaml)); the wide two-column variant is described just above.*
 
-![Today summary card](DosingStatus.png)
+![Today summary card](images/DosingStatus.png)
 
 *The today summary: doses given vs. still due, what is overdue or upcoming, and the times already-given doses were taken.*
 
-![As needed (PRN) card](PRN-card.png)
+![As needed (PRN) card](images/PRN-card.png)
 
 *The As needed (PRN) card: a Log dose button per as-needed med, with its last-taken time and doses-today count.*
 
@@ -174,7 +176,7 @@ A simple "all OK / attention needed" panel for the top of a dashboard, driven by
 the `needs_attention` sensors. Green when nothing is overdue, red (with who and
 what) when something needs investigating. Native card, no HACS needed:
 
-![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/dashboard-attention-needed.png?v=3)
+![Attention needed state](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/dashboard-attention-needed.png?v=3)
 
 ```yaml
 type: markdown
@@ -222,7 +224,7 @@ and which days it applies), not just today. Auto-discovers all patients, respect
 each one's 12h/24h setting, and shows "Daily" or the specific days. Native
 markdown card, no HACS needed:
 
-![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/ScheduleOverview.png?v=2)
+![Schedule overview](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/ScheduleOverview.png?v=2)
 
 ```yaml
 type: markdown
@@ -298,7 +300,7 @@ as switch attributes that the companion automations read.
 
 ## Supply & refill tracking
 
-![Supplies on hand](Supplies.png)
+![Supplies on hand](images/Supplies.png)
 
 *The supplies-on-hand card; a medication at or below its threshold turns red.*
 
