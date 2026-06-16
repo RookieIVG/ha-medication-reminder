@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.5] - 2026-06-15
+### Fixed
+- README screenshots render correctly on the HACS info page again. Repository housekeeping moved the images into an `images/` folder; the previous release's README still pointed at the old paths, so this release ships the updated README with absolute image URLs. No change to the integration itself.
+
 ## [0.18.4] - 2026-06-15
 ### Changed
 - Renamed the repository from `ha-medication-reminder-hacs` to `ha-medication-reminder` (the HACS default store does not allow "HACS" in repository names). Updated the documentation and issue-tracker URLs, README links and images, and blueprint source URLs. The integration domain (`medication_reminder`) and your existing setup are unchanged; HACS follows the rename automatically.

@@ -162,11 +162,11 @@ view section: add a section, set its width to 2, and paste it as a manual card.
 
 *The auto-discovering single-column layout ([`lovelace-card.yaml`](dashboards/lovelace-card.yaml)); the wide two-column variant is described just above.*
 
-![Today summary card](images/DosingStatus.png)
+![Today summary card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/DosingStatus.png)
 
 *The today summary: doses given vs. still due, what is overdue or upcoming, and the times already-given doses were taken.*
 
-![As needed (PRN) card](images/PRN-card.png)
+![As needed (PRN) card](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/PRN-card.png)
 
 *The As needed (PRN) card: a Log dose button per as-needed med, with its last-taken time and doses-today count.*
 
@@ -300,7 +300,7 @@ as switch attributes that the companion automations read.
 
 ## Supply & refill tracking
 
-![Supplies on hand](images/Supplies.png)
+![Supplies on hand](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/Supplies.png)
 
 *The supplies-on-hand card; a medication at or below its threshold turns red.*
 
