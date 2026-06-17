@@ -465,7 +465,7 @@ territory. A future version may move reminders into the integration itself.
 
 **Shipped from the roadmap:**
 
-- More schedule types beyond day-of-week: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0), and day-of-month / monthly (0.15.0). (Suggested by community members.)
+- More schedule types beyond day-of-week: every-N-days (0.11.0), on/off cycles e.g. 21 on / 7 off (0.12.0), as-needed PRN (0.14.0, suggested by community member IOT7712), and day-of-month / monthly (0.15.0, suggested by community member ggaltqq). (Suggested by community members.)
 - As-needed (PRN) display polish: PRN doses named by their medication (e.g. "Ibuprofen (as needed)"), with the placeholder 00:00 time dropped from the schedule view (0.15.1). (Suggested by a community member.)
 - Specify the time a dose was taken: the `medication_reminder.mark_given` service with `given_at` for scheduled (switch) doses (0.16.0), and `medication_reminder.log_dose` with `taken_at` for as-needed (PRN) doses (0.17.0), each updating a `<med>_last_taken` sensor. (Suggested by community members.)
 - HACS default-store submission: validated and submitted; the PR sits in the maintainer review queue, and the integration appears in the default HACS store once it merges.
@@ -476,12 +476,18 @@ territory. A future version may move reminders into the integration itself.
 
 The red/green "all OK / attention needed" status panel, the flashing alert, and
 the aggregate-status idea were suggested by Home Assistant Community user
-**IOT7712**. Thanks for the thoughtful feature requests, especially the focus on
-a reliable, glanceable, fail-safe indicator for care settings.
+**IOT7712**. Their request to handle "as required" medications safely also
+seeded the as-needed (PRN) dose type and the over-dose guard. Thanks for the
+thoughtful feature requests, especially the focus on a reliable, glanceable,
+fail-safe indicator for care settings.
 
 **Supply & refill tracking** was inspired by Home Assistant Community user
-**Tadies**, who built a pill counter on their dashboard with counter helpers.
-Thanks for sharing it.
+**Tadies**, who built a pill counter on their dashboard with counter helpers;
+their requests also shaped day-of-week scheduling and the 24-hour time-format
+option. Thanks for sharing it.
+
+The day-of-month / monthly schedule type grew from a request by Home Assistant
+Community user **ggaltqq** for more schedule options.
 
 ## License
 
