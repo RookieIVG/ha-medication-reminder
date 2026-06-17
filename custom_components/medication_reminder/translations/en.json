@@ -28,13 +28,13 @@
     },
     "step": {
       "init": {
-        "title": "Manage doses",
+        "title": "Manage medications",
         "menu_options": {
           "add_dose": "Add a dose",
           "edit_dose": "Edit a dose",
           "remove_dose": "Remove a dose",
-          "add_supply": "Track a medication supply",
-          "remove_supply": "Remove a tracked supply",
+          "add_supply": "Track a supply",
+          "remove_supply": "Remove a supply",
           "medication_detail": "Add medication detail",
           "remove_medication": "Remove medication detail",
           "settings": "Reminder settings"
