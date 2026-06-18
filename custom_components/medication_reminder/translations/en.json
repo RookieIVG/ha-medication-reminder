@@ -27,6 +27,9 @@
       "no_medications": "Add a dose first. Medication detail attaches to a medication already used in one of this patient's doses.",
       "no_medication_detail": "Add medication detail first. There is nothing to edit yet."
     },
+    "error": {
+      "duplicate_dose": "A dose with this time and these medications already exists. Use a different time, or combine them into one dose."
+    },
     "step": {
       "init": {
         "title": "Manage medications",
@@ -176,6 +179,9 @@
           "reset_time": "Daily reset time",
           "nag_minutes": "Nag window (minutes after dose)",
           "nag_interval": "Re-nag every (minutes)"
+        },
+        "data_description": {
+          "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly."
         }
       }
     }

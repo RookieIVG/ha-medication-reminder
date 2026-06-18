@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.1] - 2026-06-17
+### Fixed
+- Two doses with the same time and the same medications no longer silently collide into one switch entity. The Add and Edit dose steps now reject a duplicate time + medication with a clear error (the dose's entity id is its time plus medications, so a duplicate would have dropped one of them).
+- Reminder and dashboard times now use a portable 12-hour format, so they render on a Windows-hosted Home Assistant instead of erroring on the non-portable `%-I` strftime flag. Notifications keep the no-leading-zero look (e.g. "8:00 AM"); the example dashboards show a leading zero ("08:00 AM"). Re-import the blueprints to pick this up.
+- A stray `notify.` prefix on a patient's notify target is now stripped when saved, so a mistakenly entered `notify.mobile_app_x` cannot turn the reminder service call into `notify.notify.…`.
+
+### Changed
+- Reminder settings now notes that the re-nag interval works best as a multiple of 5, since reminders are evaluated on a 5-minute tick.
+
 ## [0.23.0] - 2026-06-17
 ### Added
 - Optional critical missed-dose alert. The reminders blueprint has a new **Critical missed-dose alert** toggle (and the companion automation a `critical_missed` variable) that makes the missed-dose notification override Silent and Do Not Disturb: `interruption-level: critical` plus a critical sound on iPhones, and a high-importance channel on Android, in one payload. Off by default (normal time-sensitive). iPhones need Critical Alerts allowed for the Home Assistant app; re-import the blueprint to get the new toggle.

@@ -19,7 +19,7 @@
 # status colours; without it the pills fall back to the default amber.
 #
 # Paste it as a manual card. No patient names or entity_ids to change.
-# Times are shown in 12-hour format; for 24-hour change %-I:%M %p to %H:%M.
+# Times are shown in 12-hour format; for 24-hour change %I:%M %p to %H:%M.
 # To make the status panel FLASH red when attention is needed, see the README.
 
 type: vertical-stack
@@ -70,13 +70,13 @@ cards:
       {%- else -%}
       {% if ns2.overdue %}**⚠️ Overdue:**
       {% for x in ns2.overdue | sort(attribute='attributes.dose_time') %}
-      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
       - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
       {%- endfor %}
       {% endif %}
       {% if ns2.upcoming %}**⏳ Upcoming:**
       {% for x in ns2.upcoming | sort(attribute='attributes.dose_time') %}
-      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
       - {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ as_timestamp(today_at(x.attributes.dose_time)) | timestamp_custom(f) }} ({{ x.attributes.medications }})
       {%- endfor %}
       {% endif %}
@@ -91,7 +91,7 @@ cards:
       **Already given:**
       {% for x in given | sort(attribute='last_changed') %}
       {%- set gat = x.attributes.given_at or x.last_changed %}
-      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%-I:%M %p' %}
+      {%- set f = '%H:%M' if x.attributes.time_format == '24h' else '%I:%M %p' %}
       - ✅ {% if show_patient %}{{ x.attributes.patient }} {% endif %}{{ x.attributes.medications }} at {{ as_timestamp(gat) | timestamp_custom(f) }}
       {%- endfor %}
       {% endif %}
@@ -185,7 +185,7 @@ cards:
       ### {{ {'dog':'🐕','cat':'🐈','person':'🧑','bird':'🐦','rabbit':'🐇','other':'🐾'}.get(ptype,'💊') }} {{ p }}
       {% for d in pdoses %}
       {%- set days = d.attributes.days or week %}
-      {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%-I:%M %p' %}
+      {%- set fmt = '%H:%M' if d.attributes.time_format == '24h' else '%I:%M %p' %}
       {%- set n = d.attributes.interval_days | int(2) %}
       {%- set stype = d.attributes.schedule_type %}
       {%- if stype == 'interval' %}

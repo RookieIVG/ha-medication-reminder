@@ -263,7 +263,7 @@ class MedicationReminderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 options={
                     CONF_DOSES: [],
                     CONF_PATIENT_TYPE: user_input[CONF_PATIENT_TYPE],
-                    CONF_NOTIFY: user_input[CONF_NOTIFY],
+                    CONF_NOTIFY: str(user_input[CONF_NOTIFY]).removeprefix("notify."),
                     CONF_RESET_TIME: DEFAULT_RESET_TIME,
                     CONF_NAG_MINUTES: DEFAULT_NAG_MINUTES,
                     CONF_NAG_INTERVAL: DEFAULT_NAG_INTERVAL,
@@ -344,14 +344,37 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         days of the month. The fields for the other types are ignored on save.
         """
         if user_input is not None:
+            new_dose = self._dose_from_input(user_input)
+            if self._dose_key_exists(new_dose):
+                return self.async_show_form(
+                    step_id="add_dose",
+                    data_schema=self._dose_schema(user_input),
+                    errors={"base": "duplicate_dose"},
+                )
             options = dict(self._entry.options)
             doses = list(options.get(CONF_DOSES, []))
-            doses.append(self._dose_from_input(user_input))
+            doses.append(new_dose)
             options[CONF_DOSES] = doses
             return self.async_create_entry(title="", data=options)
         return self.async_show_form(
             step_id="add_dose", data_schema=self._dose_schema({})
         )
+
+    def _dose_key_exists(
+        self, dose: dict[str, Any], skip_index: int | None = None
+    ) -> bool:
+        """Whether another dose already has this dose's time + medications (which
+        would collide on the same switch entity id). skip_index ignores the dose
+        being edited."""
+
+        def key(d: dict[str, Any]) -> str:
+            return slugify(str(d.get(CONF_TIME, ""))[:5] + "_" + str(d.get(CONF_MEDS, "")))
+
+        target = key(dose)
+        for i, d in enumerate(self._entry.options.get(CONF_DOSES, [])):
+            if i != skip_index and key(d) == target:
+                return True
+        return False
 
     @staticmethod
     def _dose_from_input(user_input: dict[str, Any]) -> dict[str, Any]:
@@ -521,6 +544,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         current = doses[idx]
         if user_input is not None:
             new_dose = self._dose_from_input(user_input)
+            if self._dose_key_exists(new_dose, skip_index=idx):
+                return self.async_show_form(
+                    step_id="edit_dose_details",
+                    data_schema=self._dose_schema(user_input),
+                    errors={"base": "duplicate_dose"},
+                )
             if new_dose[CONF_TIME] != str(current.get(CONF_TIME, ""))[:5] or new_dose[
                 CONF_MEDS
             ] != current.get(CONF_MEDS):
@@ -779,7 +808,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             options = dict(self._entry.options)
             options[CONF_PATIENT_TYPE] = user_input[CONF_PATIENT_TYPE]
-            options[CONF_NOTIFY] = user_input[CONF_NOTIFY]
+            options[CONF_NOTIFY] = str(user_input[CONF_NOTIFY]).removeprefix("notify.")
             options[CONF_RESET_TIME] = str(user_input[CONF_RESET_TIME])
             options[CONF_NAG_MINUTES] = int(user_input[CONF_NAG_MINUTES])
             options[CONF_NAG_INTERVAL] = int(user_input[CONF_NAG_INTERVAL])
