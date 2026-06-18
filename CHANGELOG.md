@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-06-17
+### Added
+- Optional critical missed-dose alert. The reminders blueprint has a new **Critical missed-dose alert** toggle (and the companion automation a `critical_missed` variable) that makes the missed-dose notification override Silent and Do Not Disturb: `interruption-level: critical` plus a critical sound on iPhones, and a high-importance channel on Android, in one payload. Off by default (normal time-sensitive). iPhones need Critical Alerts allowed for the Home Assistant app; re-import the blueprint to get the new toggle.
+
 ## [0.22.1] - 2026-06-17
 ### Changed
 - Grouped the Configure menu into submenus to keep it short: **Doses** (add / edit / remove), **Supplies** (track / remove), **Medication details** (add / edit / remove), and **Reminder settings**. Each action is one tap deeper, but the top menu is now four items instead of nine.

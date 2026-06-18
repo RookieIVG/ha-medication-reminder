@@ -146,6 +146,13 @@ They send a reminder when a dose is due and not given, nag every 15 minutes for
 45 minutes, then escalate once as a time-sensitive "missed" alert. Tapping
 **Mark given** turns the dose's switch on and clears the notification.
 
+The reminders blueprint has an optional **Critical missed-dose alert** toggle
+(the companion automation, a `critical_missed` variable) that makes the missed
+alert override Silent and Do Not Disturb: a critical alert with sound on
+iPhones, a high-importance channel on Android, in one payload. It works for a
+mix of devices. Off by default; on iPhones it needs **Critical Alerts** allowed
+for the Home Assistant app, and you re-import the blueprint to get the toggle.
+
 The automations send four kinds of notification:
 
 ![Notification types](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/notification-types.png)

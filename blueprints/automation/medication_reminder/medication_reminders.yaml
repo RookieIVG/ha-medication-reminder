@@ -18,12 +18,23 @@ blueprint:
       default: caretakers
       selector:
         text:
+    critical_missed:
+      name: Critical missed-dose alert
+      description: >
+        Make the missed-dose alert override Silent and Do Not Disturb. On iPhones
+        this needs Critical Alerts allowed for the Home Assistant app (Settings,
+        Notifications, Home Assistant); on Android it uses a high-importance
+        channel. Leave off for a normal time-sensitive alert.
+      default: false
+      selector:
+        boolean:
 
 trigger:
   - platform: time_pattern
     minutes: "/5"
 variables:
   default_notify: !input fallback_notify
+  critical_missed: !input critical_missed
   today: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
 action:
   - repeat:
@@ -64,17 +75,23 @@ action:
             - conditions:
                 - "{{ scheduled and not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
               sequence:
+                # Critical (override Silent/DND) or normal time-sensitive, per
+                # the input. One payload: iPhones read interruption-level/sound,
+                # Android reads channel/importance.
+                - variables:
+                    missed_data: >-
+                      {{ {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
+                          "channel": "Medication critical", "importance": "high",
+                          "push": {"interruption-level": "critical",
+                                   "sound": {"name": "default", "critical": 1, "volume": 1.0}},
+                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                         if critical_missed else
+                         {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
+                          "push": {"interruption-level": "time-sensitive"},
+                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]} }}
                 - action: "notify.{{ notify_service }}"
                   data:
                     title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
                     message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was NOT marked given. Please check on it."
-                    data:
-                      tag: "med_missed_{{ oid }}"
-                      priority: high
-                      ttl: 0
-                      push:
-                        interruption-level: time-sensitive
-                      actions:
-                        - action: "MED_GIVEN_{{ oid }}"
-                          title: "✅ Mark given"
+                    data: "{{ missed_data }}"
 mode: single

@@ -19,6 +19,10 @@
       minutes: "/5"
   variables:
     default_notify: caretakers
+    # Flip to true to make the missed-dose alert override Silent / Do Not Disturb
+    # (iPhone needs Critical Alerts allowed for the HA app; Android uses a
+    # high-importance channel).
+    critical_missed: false
     today: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
   action:
     - repeat:
@@ -59,19 +63,25 @@
               - conditions:
                   - "{{ scheduled and not given and mins_since >= nag_minutes and mins_since < nag_minutes + 5 }}"
                 sequence:
+                  # Critical (override Silent/DND) or normal time-sensitive, per
+                  # critical_missed. One payload: iPhones read
+                  # interruption-level/sound, Android reads channel/importance.
+                  - variables:
+                      missed_data: >-
+                        {{ {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
+                            "channel": "Medication critical", "importance": "high",
+                            "push": {"interruption-level": "critical",
+                                     "sound": {"name": "default", "critical": 1, "volume": 1.0}},
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]}
+                           if critical_missed else
+                           {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
+                            "push": {"interruption-level": "time-sensitive"},
+                            "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]} }}
                   - action: "notify.{{ notify_service }}"
                     data:
                       title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
                       message: "{{ patient }}'s {{ clock }} dose ({{ meds }}) was NOT marked given. Please check on it."
-                      data:
-                        tag: "med_missed_{{ oid }}"
-                        priority: high
-                        ttl: 0
-                        push:
-                          interruption-level: time-sensitive
-                        actions:
-                          - action: "MED_GIVEN_{{ oid }}"
-                            title: "✅ Mark given"
+                      data: "{{ missed_data }}"
   mode: single
 
 - id: med_reminder_mark_given
