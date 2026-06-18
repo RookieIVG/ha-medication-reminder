@@ -24,7 +24,8 @@
   "options": {
     "abort": {
       "no_doses": "Add a dose first. There are no doses to edit yet.",
-      "no_medications": "Add a dose first. Medication detail attaches to a medication already used in one of this patient's doses."
+      "no_medications": "Add a dose first. Medication detail attaches to a medication already used in one of this patient's doses.",
+      "no_medication_detail": "Add medication detail first. There is nothing to edit yet."
     },
     "step": {
       "init": {
@@ -36,6 +37,7 @@
           "add_supply": "Track a supply",
           "remove_supply": "Remove a supply",
           "medication_detail": "Add medication detail",
+          "edit_medication": "Edit medication detail",
           "remove_medication": "Remove medication detail",
           "settings": "Reminder settings"
         }
@@ -116,6 +118,23 @@
         "description": "Optional reference info for a medication, kept separate from the short dose name. Pick a medication from this patient's doses; saving detail for one that already has it updates it.",
         "data": {
           "med_name": "Medication name",
+          "full_name": "Full name (optional)",
+          "strength": "Strength (e.g. 5mg)",
+          "brand": "Brand (optional)",
+          "prescribed_for": "Prescribed for (condition)",
+          "dosage": "Dosage summary (e.g. 2 tablets twice a day)"
+        }
+      },
+      "edit_medication": {
+        "title": "Edit medication detail",
+        "data": {
+          "med_name": "Medication"
+        }
+      },
+      "edit_medication_details": {
+        "title": "Edit detail for {medication}",
+        "description": "Update the reference detail for {medication}.",
+        "data": {
           "full_name": "Full name (optional)",
           "strength": "Strength (e.g. 5mg)",
           "brand": "Brand (optional)",

@@ -297,6 +297,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._entry = config_entry
         self._edit_index: int | None = None
+        self._edit_med_name: str | None = None
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -310,6 +311,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 "add_supply",
                 "remove_supply",
                 "medication_detail",
+                "edit_medication",
                 "remove_medication",
                 "settings",
             ],
@@ -619,25 +621,9 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_medications")
         if user_input is not None:
             name = str(user_input[CONF_MED_NAME]).strip()
-            record = {
-                CONF_MED_NAME: name,
-                CONF_MED_FULL_NAME: str(user_input.get(CONF_MED_FULL_NAME, "")).strip(),
-                CONF_MED_STRENGTH: str(user_input.get(CONF_MED_STRENGTH, "")).strip(),
-                CONF_MED_BRAND: str(user_input.get(CONF_MED_BRAND, "")).strip(),
-                CONF_MED_PRESCRIBED_FOR: str(
-                    user_input.get(CONF_MED_PRESCRIBED_FOR, "")
-                ).strip(),
-                CONF_MED_DOSAGE: str(user_input.get(CONF_MED_DOSAGE, "")).strip(),
-            }
-            options = dict(self._entry.options)
-            meds = [
-                m
-                for m in options.get(CONF_MEDICATIONS, [])
-                if str(m.get(CONF_MED_NAME, "")).strip().lower() != name.lower()
-            ]
-            meds.append(record)
-            options[CONF_MEDICATIONS] = meds
-            return self.async_create_entry(title="", data=options)
+            return self._save_medication(
+                name, self._medication_record(name, user_input)
+            )
         schema = vol.Schema(
             {
                 vol.Required(CONF_MED_NAME): selector.SelectSelector(
@@ -646,14 +632,112 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(CONF_MED_FULL_NAME): selector.TextSelector(),
-                vol.Optional(CONF_MED_STRENGTH): selector.TextSelector(),
-                vol.Optional(CONF_MED_BRAND): selector.TextSelector(),
-                vol.Optional(CONF_MED_PRESCRIBED_FOR): selector.TextSelector(),
-                vol.Optional(CONF_MED_DOSAGE): selector.TextSelector(),
+                **self._medication_detail_fields({}),
             }
         )
         return self.async_show_form(step_id="medication_detail", data_schema=schema)
+
+    async def async_step_edit_medication(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Pick a medication that has detail; its values pre-fill the next step."""
+        names = [
+            str(m.get(CONF_MED_NAME, "")).strip()
+            for m in self._entry.options.get(CONF_MEDICATIONS, [])
+            if str(m.get(CONF_MED_NAME, "")).strip()
+        ]
+        if not names:
+            return self.async_abort(reason="no_medication_detail")
+        if user_input is not None:
+            self._edit_med_name = str(user_input[CONF_MED_NAME])
+            return await self.async_step_edit_medication_details()
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_MED_NAME): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=sorted(names),
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                )
+            }
+        )
+        return self.async_show_form(step_id="edit_medication", data_schema=schema)
+
+    async def async_step_edit_medication_details(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """The pre-filled detail form for the chosen medication; saving updates it."""
+        name = self._edit_med_name
+        record = (
+            next(
+                (
+                    m
+                    for m in self._entry.options.get(CONF_MEDICATIONS, [])
+                    if str(m.get(CONF_MED_NAME, "")).strip().lower()
+                    == str(name).strip().lower()
+                ),
+                None,
+            )
+            if name
+            else None
+        )
+        if record is None:
+            return self.async_abort(reason="no_medication_detail")
+        if user_input is not None:
+            return self._save_medication(
+                str(name).strip(),
+                self._medication_record(str(name).strip(), user_input),
+            )
+        return self.async_show_form(
+            step_id="edit_medication_details",
+            data_schema=vol.Schema(self._medication_detail_fields(record)),
+            description_placeholders={"medication": str(name)},
+        )
+
+    @staticmethod
+    def _medication_record(name: str, user_input: dict[str, Any]) -> dict[str, Any]:
+        """A medication-detail record from form input, keyed by name."""
+        return {
+            CONF_MED_NAME: name,
+            CONF_MED_FULL_NAME: str(user_input.get(CONF_MED_FULL_NAME, "")).strip(),
+            CONF_MED_STRENGTH: str(user_input.get(CONF_MED_STRENGTH, "")).strip(),
+            CONF_MED_BRAND: str(user_input.get(CONF_MED_BRAND, "")).strip(),
+            CONF_MED_PRESCRIBED_FOR: str(
+                user_input.get(CONF_MED_PRESCRIBED_FOR, "")
+            ).strip(),
+            CONF_MED_DOSAGE: str(user_input.get(CONF_MED_DOSAGE, "")).strip(),
+        }
+
+    def _save_medication(
+        self, name: str, record: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Upsert a medication-detail record (replace any with the same name)."""
+        options = dict(self._entry.options)
+        meds = [
+            m
+            for m in options.get(CONF_MEDICATIONS, [])
+            if str(m.get(CONF_MED_NAME, "")).strip().lower() != name.lower()
+        ]
+        meds.append(record)
+        options[CONF_MEDICATIONS] = meds
+        return self.async_create_entry(title="", data=options)
+
+    @staticmethod
+    def _medication_detail_fields(d: dict[str, Any]) -> dict[Any, Any]:
+        """The optional detail fields (full name, strength, brand, prescribed-for,
+        dosage), pre-filled from record d (empty d = blank)."""
+
+        def opt(key: str) -> vol.Optional:
+            v = str(d.get(key, "")).strip()
+            return vol.Optional(key, default=v) if v else vol.Optional(key)
+
+        return {
+            opt(CONF_MED_FULL_NAME): selector.TextSelector(),
+            opt(CONF_MED_STRENGTH): selector.TextSelector(),
+            opt(CONF_MED_BRAND): selector.TextSelector(),
+            opt(CONF_MED_PRESCRIBED_FOR): selector.TextSelector(),
+            opt(CONF_MED_DOSAGE): selector.TextSelector(),
+        }
 
     async def async_step_remove_medication(
         self, user_input: dict[str, Any] | None = None

@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-06-17
+### Added
+- Edit medication detail. **Configure** has a new **Edit medication detail** step: pick a medication that already has detail, change anything on a form pre-filled with its current values, and save to update it (no re-typing). Pairs with the existing Add and Remove medication detail steps.
+
 ## [0.21.1] - 2026-06-17
 ### Changed
 - Polished the Configure menu: retitled "Manage doses" to "Manage medications" (it also covers supplies, medication detail, and reminder settings), and shortened the supply options to "Track a supply" and "Remove a supply".
