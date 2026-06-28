@@ -426,6 +426,32 @@ which makes every-N-days and on/off-cycle doses easy to see at a glance:
 
 ![Medication calendar](https://raw.githubusercontent.com/magikh0e/ha-medication-reminder/main/images/calendar.png)
 
+### Marking a dose from a sensor, NFC tag, or button
+
+Because a dose is just a `switch.<patient>_<time>` entity, anything in Home
+Assistant can mark it given, not only a notification tap. A contact sensor on a
+pill box, an NFC tag on the bottle, a dashboard button, even a smart scale, just
+turn the switch on (or call `medication_reminder.mark_given` to also record the
+actual taken-time):
+
+```yaml
+trigger:
+  - platform: state
+    entity_id: binary_sensor.pill_box_lid   # your sensor, tag, or button
+    to: "on"
+action:
+  - action: medication_reminder.mark_given
+    target:
+      entity_id: switch.bella_8_00_am_apoquel   # the dose that trigger is for
+    data:
+      given_at: "{{ now() }}"
+```
+
+Marking given this way still clears the reminder, decrements that medication's
+supply, updates the `<med>_last_taken` time, and feeds the over-dose guard, the
+same as tapping **Mark given**. If a trigger covers more than one dose a day,
+point it at the switch whose `dose_time` is closest to now.
+
 ## Safety & fail-safes
 
 This is a reminder aid, **not** a medical device (see the note up top), but
