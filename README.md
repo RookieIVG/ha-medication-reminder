@@ -42,6 +42,7 @@ setup with no custom integration? Use that one; otherwise use this.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
+- **Localized UI.** The configuration screens follow your Home Assistant language, with German and Dutch included alongside English (community-contributed) and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -494,6 +495,23 @@ the caretaker. For as-needed (PRN) meds you can set a minimum interval between
 doses and a daily cap; the `<med>_dose_guard` sensor goes red when another dose
 now would be too soon or over the cap (the "no less than 4 hours apart" case).
 
+## Languages
+
+The configuration UI follows your Home Assistant language. English is the source,
+with **German** (`de`) and **Dutch** (`nl`) included, both community-contributed.
+Any string a locale has not translated yet falls back to English, so a partial
+translation is always safe.
+
+Want your language added? It is a single-file pull request: copy
+[`en.json`](custom_components/medication_reminder/translations/en.json) to
+`<lang>.json`, translate the values (keep the keys and `{placeholders}` like
+`{medication}` exactly as-is), and open a PR with just that one file. A
+Translations CI check reports each locale's coverage against English
+automatically, and `python scripts/check_translations.py` runs the same report
+locally. See
+[`translations/README.md`](custom_components/medication_reminder/translations/README.md)
+and the tracking issue [#13](https://github.com/magikh0e/ha-medication-reminder/issues/13).
+
 ## Why entities + YAML (not all-in-one, yet)
 
 The current versions deliberately keep the *notification* logic in battle-tested
@@ -517,6 +535,7 @@ territory. A future version may move reminders into the integration itself.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
+- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG) and Dutch (0.24.1, contributed by GitHub user VGrol) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 
 ## Acknowledgements
 
