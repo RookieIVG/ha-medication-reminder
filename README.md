@@ -42,6 +42,7 @@ setup with no custom integration? Use that one; otherwise use this.
 - **Per-medication detail.** Optional strength, brand, full name, "prescribed for", and a dosage summary per medication, plus a `medications` sensor that lists everything the patient takes for a ready-to-share "current medications" view to hand a vet or doctor.
 - **Next-dose sensor and calendar.** A `next_dose` timestamp and a read-only medication calendar per patient, handy for "remind me before" automations and seeing long cycles laid out.
 - **Zero-edit dashboard.** Auto-discovers every patient and dose, no names to maintain.
+- **Localized UI.** The configuration screens follow your Home Assistant language, with community-contributed German and Dutch alongside the English base, and any untranslated text falling back to English. See [Languages](#languages).
 - **Fail-safe by design.** Overdue detection trips on elapsed time alone and errs toward "problem", marking is reversible, dose state survives restarts, and every guard warns rather than blocks. See [Safety & fail-safes](#safety--fail-safes).
 
 ## Installation
@@ -374,8 +375,10 @@ medication then gets:
   `est_runout_date`, computed from the schedule. Un-marking a dose (the early-dose
   "undo" or a manual toggle-off) adds the units back. Adjust it any time to
   correct a miscount or to refill.
-- `button.<patient>_<med>_refill` - a one-tap restock that sets the supply back to
-  its configured refill amount, instead of editing the number by hand. It fires a
+- `button.<patient>_<med>_refill` - a one-tap restock, instead of editing the
+  number by hand. By default it sets the supply to its configured refill amount;
+  turn on **Add on refill (package refill)** for that supply to instead add the
+  refill amount to what is left (e.g. 17 + 30 = 47), capped at the max. It fires a
   `medication_reminder_supply_refill` event that the supply number listens for.
 - `button.<patient>_log_<meds>_dose` - only created for **as-needed (PRN)** doses.
   Pressing it logs one dose and decrements the matching supply with **no
@@ -492,6 +495,23 @@ the caretaker. For as-needed (PRN) meds you can set a minimum interval between
 doses and a daily cap; the `<med>_dose_guard` sensor goes red when another dose
 now would be too soon or over the cap (the "no less than 4 hours apart" case).
 
+## Languages
+
+The configuration UI follows your Home Assistant language. English is the source,
+with **German** (`de`) and **Dutch** (`nl`) included, both community-contributed.
+Any string a locale has not translated yet falls back to English, so a partial
+translation is always safe.
+
+Want your language added? It is a single-file pull request: copy
+[`en.json`](custom_components/medication_reminder/translations/en.json) to
+`<lang>.json`, translate the values (keep the keys and `{placeholders}` like
+`{medication}` exactly as-is), and open a PR with just that one file. A
+Translations CI check reports each locale's coverage against English
+automatically, and `python scripts/check_translations.py` runs the same report
+locally. See
+[`translations/README.md`](custom_components/medication_reminder/translations/README.md)
+and the tracking issue [#13](https://github.com/magikh0e/ha-medication-reminder/issues/13).
+
 ## Why entities + YAML (not all-in-one, yet)
 
 The current versions deliberately keep the *notification* logic in battle-tested
@@ -515,6 +535,7 @@ territory. A future version may move reminders into the integration itself.
 - Over-dose guard for as-needed (PRN) meds: a minimum interval between doses and a max-per-day cap, surfaced as a `<med>_dose_guard` problem sensor that warns when another dose now would be too soon or over the cap (0.19.0). Builds on the early-dose warning (0.10.0) and PRN taken-time recording (0.17.0). (Idea from community member IOT7712.)
 - Per-medication detail: optional strength/mg, brand, the condition it was prescribed for, a dosage summary, and a full name separate from the short reminder name, plus a `<patient>_medications` "current medications" view for handing a provider the "what" rather than the "when" (0.20.0). (Suggested by GitHub user VGrol.)
 - Edit a dose in place: a new Edit a dose step pre-fills the form with a dose's current values and replaces it on save, instead of removing and re-adding (0.21.0). Editing only the schedule keeps the same entity; changing the time or medications starts a fresh one. (Requested by GitHub user weswark.)
+- Localized configuration UI: German (0.24.1, contributed by GitHub user RookieIVG) and Dutch (0.24.1, contributed by GitHub user VGrol) alongside English, plus a translation coverage check for contributors (0.25.0). (Requested by GitHub user interkom.)
 
 ## Acknowledgements
 
@@ -532,6 +553,11 @@ option (also requested by GitHub user **DarkVeter**). Thanks for sharing it.
 
 The day-of-month / monthly schedule type grew from a request by Home Assistant
 Community user **ggaltqq** for more schedule options.
+
+The **German and Dutch translations** were contributed by GitHub users
+**RookieIVG** (`de`) and **VGrol** (`nl`), after **interkom** asked for
+multi-language support. Thanks for making the integration usable in more
+languages, and for the clean, complete locale files.
 
 ## License
 
