@@ -32,7 +32,11 @@ from .const import (
     CONF_SCHEDULE_TYPE,
     CONF_SUPPLIES,
     CONF_SUPPLY_MED,
+    CONF_SUPPLY_REFILL_ADD,
+    CONF_SUPPLY_REFILL_TO,
     CONF_TIME,
+    DEFAULT_SUPPLY_REFILL_ADD,
+    DEFAULT_SUPPLY_REFILL_TO,
     DOMAIN,
     EVENT_DOSE_LOGGED,
     EVENT_SUPPLY_REFILL,
@@ -52,7 +56,15 @@ async def async_setup_entry(
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
 
     entities: list[ButtonEntity] = [
-        MedicationRefillButton(entry, patient, str(supply[CONF_SUPPLY_MED]).strip())
+        MedicationRefillButton(
+            entry,
+            patient,
+            str(supply[CONF_SUPPLY_MED]).strip(),
+            refill_add=bool(
+                supply.get(CONF_SUPPLY_REFILL_ADD, DEFAULT_SUPPLY_REFILL_ADD)
+            ),
+            refill_to=supply.get(CONF_SUPPLY_REFILL_TO, DEFAULT_SUPPLY_REFILL_TO),
+        )
         for supply in supplies
     ]
     entities.extend(
@@ -75,16 +87,32 @@ async def async_setup_entry(
 
 
 class MedicationRefillButton(ButtonEntity):
-    """One-tap restock of a medication supply to its refill-to amount."""
+    """One-tap restock of a medication supply.
+
+    Reflects the supply's refill mode so it is discoverable at a glance: an
+    "add" (package) button carries a distinct icon, and both modes expose
+    `refill_mode` / `refill_amount` attributes. The name (and therefore the
+    entity id) stays `<med> refill` in either mode, so automations targeting the
+    button keep working when the mode is changed.
+    """
 
     _attr_should_poll = False
     _attr_has_entity_name = True
-    _attr_icon = "mdi:package-variant-plus"
 
-    def __init__(self, entry: ConfigEntry, patient: str, med: str) -> None:
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        med: str,
+        refill_add: bool = DEFAULT_SUPPLY_REFILL_ADD,
+        refill_to: float = DEFAULT_SUPPLY_REFILL_TO,
+    ) -> None:
         self._patient = patient
         self._med = med
+        self._refill_add = refill_add
+        self._refill_to = refill_to
         self._attr_name = f"{med} refill"
+        self._attr_icon = "mdi:package-variant-plus" if refill_add else "mdi:refresh"
         self._attr_unique_id = f"{entry.entry_id}_refill_{slugify(med)}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
@@ -94,13 +122,16 @@ class MedicationRefillButton(ButtonEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the patient/med (for dashboard filtering) and the refill mode."""
         return {
             "patient": self._patient,
             "medication": self._med,
+            "refill_mode": "add" if self._refill_add else "set",
+            "refill_amount": self._refill_to,
         }
 
     async def async_press(self) -> None:
-        """Tell the matching supply to restock to full."""
+        """Tell the matching supply to restock (set-to or add, per its config)."""
         self.hass.bus.async_fire(
             EVENT_SUPPLY_REFILL,
             {"patient": self._patient, "medication": self._med},

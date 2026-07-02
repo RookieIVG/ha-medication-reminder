@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1] - 2026-07-01
+### Changed
+- The refill button now shows which refill mode it uses, making the per-supply **Add on refill (package refill)** setting easier to discover. It exposes `refill_mode` (`set` or `add`) and `refill_amount` attributes and uses a distinct icon per mode (a plus-package in add mode). It also now carries `patient` / `medication` attributes so it can be placed on a dashboard alongside the supply (proposed by @RookieIVG in #15). The entity id stays `<med> refill` in both modes, so existing automations keep working.
+
 ## [0.25.0] - 2026-06-30
 ### Added
 - Per-supply refill mode. A supply's refill button still defaults to setting the count to the configured refill amount, but you can now switch it to **Add on refill (package refill)**, which adds the refill amount to what is left (e.g. 17 + 30 = 47, capped at the max) instead of resetting. Set it per supply in **Configure, Supplies** under Track a supply or Edit a supply. Requested in a GitHub issue (#12).

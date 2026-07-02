@@ -189,7 +189,7 @@ cards:
                 {% endfor %}]
             sort:
               method: name
-              reverse: true
+
           # Per-patient schedule overview (read-only), auto-discovers
           - type: markdown
             content: |-
