@@ -307,8 +307,8 @@ template's `if` (Supplies is identical on `states.number`):
    and s.attributes.patient == 'Person A' %}
 ```
 
-The only entities without a `patient` attribute are the Log dose and refill
-**buttons**, so on the As-needed (PRN) card filter those by entity_id, which
+The only entity without a `patient` attribute is the Log dose (PRN)
+**button**, so on the As-needed (PRN) card filter it by entity_id, which
 starts with the patient's name (lowercased, spaces become underscores):
 
 ```yaml
@@ -380,8 +380,12 @@ medication then gets:
 - `button.<patient>_<med>_refill` - a one-tap restock, instead of editing the
   number by hand. By default it sets the supply to its configured refill amount;
   turn on **Add on refill (package refill)** for that supply to instead add the
-  refill amount to what is left (e.g. 17 + 30 = 47), capped at the max. It fires a
-  `medication_reminder_supply_refill` event that the supply number listens for.
+  refill amount to what is left (e.g. 17 + 30 = 47), capped at the max. The button
+  shows which mode it is in: a `refill_mode` attribute (`set` or `add`), a
+  `refill_amount` attribute, and a distinct icon (a plus-package in add mode). It
+  also carries `patient` / `medication` attributes, so it can go on a dashboard
+  alongside the supply. It fires a `medication_reminder_supply_refill` event that
+  the supply number listens for.
 - `button.<patient>_log_<meds>_dose` - only created for **as-needed (PRN)** doses.
   Pressing it logs one dose and decrements the matching supply with **no
   once-per-day limit**, so a med taken several times a day is counted each press.
