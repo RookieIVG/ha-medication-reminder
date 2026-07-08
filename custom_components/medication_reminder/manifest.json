@@ -1,10 +1,10 @@
 {
   "domain": "medication_reminder",
   "name": "Medication Reminder",
-  "codeowners": ["@magikh0e"],
+  "codeowners": ["@RookieIVG"],
   "config_flow": true,
-  "documentation": "https://github.com/magikh0e/ha-medication-reminder",
+  "documentation": "https://github.com/RookieIVG/ha-medication-reminder",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/magikh0e/ha-medication-reminder/issues",
+  "issue_tracker": "https://github.com/RookieIVG/ha-medication-reminder/issues",
   "version": "0.25.1"
 }
