@@ -39,6 +39,7 @@ from .const import (
     CONF_NOTIFY,
     CONF_PATIENT,
     CONF_PATIENT_TYPE,
+    CONF_PAUSE_SWITCHES,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_TIME,
@@ -51,6 +52,7 @@ from .const import (
     DEFAULT_NAG_INTERVAL,
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
+    DEFAULT_PAUSE_SWITCHES,
     DEFAULT_RESET_TIME,
     DEFAULT_TIME_FORMAT,
     DOMAIN,
@@ -110,6 +112,8 @@ async def async_setup_entry(
     nag_interval: int = entry.options.get(CONF_NAG_INTERVAL, DEFAULT_NAG_INTERVAL)
     time_format: str = entry.options.get(CONF_TIME_FORMAT, DEFAULT_TIME_FORMAT)
     doses: list[dict[str, Any]] = entry.options.get(CONF_DOSES, [])
+    # Opt-in: add a pause toggle per scheduled dose (suspend a med until resumed).
+    pause_enabled: bool = entry.options.get(CONF_PAUSE_SWITCHES, DEFAULT_PAUSE_SWITCHES)
 
     # Crash-safe given-state: load the saved map and a coroutine to persist it.
     store = _given_store(hass, entry.entry_id)
@@ -118,8 +122,10 @@ async def async_setup_entry(
     async def _save_given() -> None:
         await store.async_save(given_state)
 
-    entities = [
-        MedicationDoseSwitch(
+    dose_switches: list[MedicationDoseSwitch] = []
+    entities: list[SwitchEntity] = []
+    for dose in doses:
+        dose_switch = MedicationDoseSwitch(
             entry,
             patient,
             patient_type,
@@ -130,9 +136,17 @@ async def async_setup_entry(
             dose,
             given_state,
             _save_given,
+            pause_enabled,
         )
-        for dose in doses
-    ]
+        dose_switches.append(dose_switch)
+        entities.append(dose_switch)
+        # Pause toggle only for scheduled (non-PRN) doses: a PRN dose has no
+        # schedule to suspend. Added after its dose switch so the dose switch's
+        # state restores first. It drives the dose switch's paused flag directly.
+        if pause_enabled and (dose.get(CONF_SCHEDULE_TYPE) or "") != SCHEDULE_PRN:
+            pause_switch = MedicationDosePauseSwitch(entry, patient, dose, dose_switch)
+            dose_switch.register_pause_switch(pause_switch)
+            entities.append(pause_switch)
     async_add_entities(entities)
 
     # mark_given service: the plain toggle is "Take Now"; this records a dose
@@ -176,7 +190,7 @@ async def async_setup_entry(
 
     @callback
     def _reset_all(_now) -> None:
-        for entity in entities:
+        for entity in dose_switches:
             entity.reset_given()
         # One disk write for the whole reset, not one per dose.
         hass.async_create_task(_save_given())
@@ -207,10 +221,18 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         dose: dict[str, Any],
         given_state: dict[str, str | None],
         save_given: Callable[[], Awaitable[None]],
+        pause_enabled: bool = False,
     ) -> None:
         # Shared crash-safe given-state map (unique_id -> give-time) and its saver.
         self._given_state = given_state
         self._save_given = save_given
+        # Pause (suspend): honoured only when the pause-switches option is on, so
+        # turning the option off resumes everything. Set by the sibling pause
+        # switch; unlike the given/skip state it is NOT cleared by the daily reset,
+        # so a med stays paused across days until the toggle is switched back.
+        self._pause_enabled = pause_enabled
+        self._paused: bool = False
+        self._pause_switch: SwitchEntity | None = None
         self._patient = patient
         self._patient_type = patient_type
         self._notify = notify_target
@@ -347,7 +369,37 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             "nag_interval": self._nag_interval,
             "time_format": self._time_format,
             "given_at": self._given_at,
+            # Suspended until resumed: no reminders, not overdue, left out of the
+            # day summary and the pill-box plan. Persists across the daily reset.
+            "paused": self._paused,
         }
+
+    @property
+    def paused(self) -> bool:
+        """Whether this dose is suspended (the pause toggle is on)."""
+        return self._paused
+
+    def register_pause_switch(self, pause_switch: SwitchEntity) -> None:
+        """Link the sibling pause toggle so a change refreshes its display."""
+        self._pause_switch = pause_switch
+
+    async def async_pause(self) -> None:
+        """Suspend this dose until resumed (no effect unless the option is on)."""
+        if not self._pause_enabled or self._paused:
+            return
+        self._paused = True
+        self.async_write_ha_state()
+        if self._pause_switch is not None:
+            self._pause_switch.async_write_ha_state()
+
+    async def async_resume(self) -> None:
+        """Resume a suspended dose."""
+        if not self._paused:
+            return
+        self._paused = False
+        self.async_write_ha_state()
+        if self._pause_switch is not None:
+            self._pause_switch.async_write_ha_state()
 
     @property
     def extra_restore_state_data(self) -> _DoseExtraData:
@@ -398,6 +450,12 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
             # missing): freeze its last known change time so the displayed
             # give-time stops drifting to the startup time on each restart.
             self._given_at = last_state.last_changed.isoformat()
+        # Restore the pause (suspend) state, independent of the given/skip state
+        # and not tied to the day. Honoured only while the option is on, so
+        # turning the option off (the entity is recreated without pause enabled)
+        # resumes every dose rather than stranding one paused with no toggle.
+        if self._pause_enabled and last_state is not None:
+            self._paused = bool(last_state.attributes.get("paused"))
         # Migration: a dose marked given under a pre-store version is not in the
         # store yet. Seed it now so it is crash-safe without waiting for a re-mark.
         if self._attr_is_on and self._attr_unique_id not in self._given_state:
@@ -576,7 +634,8 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
     @callback
     def reset_given(self) -> None:
         """Daily reset: clear the given flag and give-time. The shared store is
-        saved once by the reset loop, not per dose."""
+        saved once by the reset loop, not per dose. The pause (suspend) state is
+        deliberately left untouched, so a paused med stays paused across days."""
         self._attr_is_on = False
         self._given_at = None
         self._skipped = []
@@ -585,3 +644,65 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
         self._marked_units = None
         self._given_state[self._attr_unique_id] = None
         self.async_write_ha_state()
+
+
+class MedicationDosePauseSwitch(SwitchEntity):
+    """The panel toggle to suspend a scheduled dose until resumed.
+
+    A thin control over its dose switch's pause flag (the single source of
+    truth, persisted there), created only for scheduled doses when the
+    pause-switches option is on. On suspends the dose: no reminders, not flagged
+    overdue, left out of the day summary and the pill-box plan, and no supply
+    counted down, until it is switched back off. The suspend survives the daily
+    reset and restarts; it is cleared only by resuming or by turning the option
+    off.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:pause-circle-outline"
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        dose: dict[str, Any],
+        dose_switch: MedicationDoseSwitch,
+    ) -> None:
+        self._dose = dose_switch
+        self._patient = patient
+        self._time = str(dose[CONF_TIME])[:5]
+        meds = str(dose[CONF_MEDS])
+        self._attr_name = f"Pause {self._time} {meds}"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_pause_{slugify(self._time + '_' + meds)}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    @property
+    def is_on(self) -> bool:
+        return self._dose.paused
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        # A pause-control marker and the dose's patient/time, for the dashboards
+        # to find and sort these toggles. Deliberately NO "medications" key: the
+        # status sensors and reminder blueprint identify dose switches by that
+        # attribute, and a pause switch must never be mistaken for a dose.
+        return {
+            "pause_control": True,
+            "patient": self._patient,
+            "dose_time": self._time,
+        }
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Suspend the dose."""
+        await self._dose.async_pause()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Resume the dose."""
+        await self._dose.async_resume()

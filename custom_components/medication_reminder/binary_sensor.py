@@ -124,9 +124,16 @@ class _DoseLookupMixin:
         return med_day(dt_util.now(), self._reset_time)
 
     def _todays_doses(self) -> list:
-        """This patient's doses scheduled for the current medication day."""
+        """This patient's doses scheduled for the current medication day.
+
+        A paused (suspended) dose is left out: it is on hold, so it is neither
+        pending, overdue, nor counted toward "all doses given"."""
         day = self._med_day()
-        return [s for s in self._doses() if is_due(s.attributes, day)]
+        return [
+            s
+            for s in self._doses()
+            if is_due(s.attributes, day) and not s.attributes.get("paused")
+        ]
 
     @callback
     def _track_dose_changes(self) -> None:

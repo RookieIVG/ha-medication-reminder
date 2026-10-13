@@ -38,6 +38,9 @@ CONF_SKIP_BUTTONS = "skip_buttons"  # opt-in per-med skip buttons for grouped do
 CONF_PLAN_VIEW = (
     "plan_view"  # opt-in per-patient pill-box plan (offset number + sensor)
 )
+CONF_PAUSE_SWITCHES = (
+    "pause_switches"  # opt-in per-dose pause toggle (suspend a med until resumed)
+)
 
 # Per-dose schedule type and its interval / cycle settings.
 CONF_SCHEDULE_TYPE = "schedule_type"
@@ -107,6 +110,7 @@ DEFAULT_NAG_INTERVAL = 15
 DEFAULT_TIME_FORMAT = "12h"
 DEFAULT_SKIP_BUTTONS = False
 DEFAULT_PLAN_VIEW = False
+DEFAULT_PAUSE_SWITCHES = False
 DEFAULT_SNOOZE_MINUTES = 30
 DEFAULT_SUPPLY_UNITS = 30
 DEFAULT_SUPPLY_PER_DOSE = 1

@@ -40,6 +40,7 @@ from .const import (
     CONF_NOTIFY,
     CONF_PATIENT,
     CONF_PATIENT_TYPE,
+    CONF_PAUSE_SWITCHES,
     CONF_PLAN_VIEW,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
@@ -68,6 +69,7 @@ from .const import (
     DEFAULT_NAG_MINUTES,
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
+    DEFAULT_PAUSE_SWITCHES,
     DEFAULT_PLAN_VIEW,
     DEFAULT_SKIP_BUTTONS,
     DEFAULT_SCHEDULE_TYPE,
@@ -675,6 +677,8 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             if include_all or self._entry.options.get(CONF_SKIP_BUTTONS):
                 for med in partial_skip_meds(meds, stype):
                     ids.add(("button", f"{eid}_skipbtn_{slug}_{slugify(med)}"))
+            if include_all or self._entry.options.get(CONF_PAUSE_SWITCHES):
+                ids.add(("switch", f"{eid}_pause_{slug}"))
         return ids
 
     def _prune_stale_dose_entities(
@@ -1072,9 +1076,19 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             options[CONF_TIME_FORMAT] = user_input[CONF_TIME_FORMAT]
             options[CONF_SKIP_BUTTONS] = bool(user_input.get(CONF_SKIP_BUTTONS, False))
             options[CONF_PLAN_VIEW] = bool(user_input.get(CONF_PLAN_VIEW, False))
+            options[CONF_PAUSE_SWITCHES] = bool(
+                user_input.get(CONF_PAUSE_SWITCHES, False)
+            )
             # Turning the plan view off removes its entities so they do not linger.
             if self._entry.options.get(CONF_PLAN_VIEW) and not options[CONF_PLAN_VIEW]:
                 self._prune_plan_entities()
+            # Turning pause toggles off removes them (and resumes every dose, since
+            # the dose switches ignore a restored paused flag with the option off).
+            if (
+                self._entry.options.get(CONF_PAUSE_SWITCHES)
+                and not options[CONF_PAUSE_SWITCHES]
+            ):
+                self._prune_pause_entities()
             return self.async_create_entry(title="", data=options)
         opts = self._entry.options
         schema = vol.Schema(
@@ -1110,6 +1124,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_PLAN_VIEW,
                     default=bool(opts.get(CONF_PLAN_VIEW, DEFAULT_PLAN_VIEW)),
                 ): selector.BooleanSelector(),
+                vol.Optional(
+                    CONF_PAUSE_SWITCHES,
+                    default=bool(opts.get(CONF_PAUSE_SWITCHES, DEFAULT_PAUSE_SWITCHES)),
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
@@ -1124,5 +1142,21 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             ("sensor", f"{eid}_plan"),
         ):
             entity_id = registry.async_get_entity_id(domain, DOMAIN, unique_id)
+            if entity_id:
+                registry.async_remove(entity_id)
+
+    def _prune_pause_entities(self) -> None:
+        """Remove every dose's pause switch when the pause-switches option is
+        turned off, so none linger as unavailable. The dose switches keep their
+        state; their paused flag is ignored while the option is off."""
+        eid = self._entry.entry_id
+        registry = er.async_get(self.hass)
+        for dose in self._entry.options.get(CONF_DOSES, []):
+            time = str(dose.get(CONF_TIME, ""))[:5]
+            meds = str(dose.get(CONF_MEDS, ""))
+            slug = slugify(time + "_" + meds)
+            entity_id = registry.async_get_entity_id(
+                "switch", DOMAIN, f"{eid}_pause_{slug}"
+            )
             if entity_id:
                 registry.async_remove(entity_id)

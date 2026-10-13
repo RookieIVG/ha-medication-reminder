@@ -223,12 +223,14 @@
           "nag_minutes": "Nag window (minutes after dose)",
           "nag_interval": "Re-nag every (minutes)",
           "skip_buttons": "Partial-dose skip buttons",
-          "plan_view": "Pill-box plan view"
+          "plan_view": "Pill-box plan view",
+          "pause_switches": "Pause switches"
         },
         "data_description": {
           "nag_interval": "Use a multiple of 5; reminders are evaluated on a 5-minute tick, so other values re-nag less evenly.",
           "skip_buttons": "For doses that group two or more meds, add a button per med that marks the dose given while skipping that one med (its supply is not counted). Off by default; turn on if a med in a grouped dose is sometimes missing.",
-          "plan_view": "Add an opt-in per-day plan for filling a pill organiser: a plan sensor and a day-offset number (0 = today) for stepping through days. The bundled dashboards show it as a table of each day's meds and amounts per time slot. Off by default."
+          "plan_view": "Add an opt-in per-day plan for filling a pill organiser: a plan sensor and a day-offset number (0 = today) for stepping through days. The bundled dashboards show it as a table of each day's meds and amounts per time slot. Off by default.",
+          "pause_switches": "Add a pause toggle to each scheduled dose. Turn it on to suspend that med until you switch it back off, e.g. when a doctor puts it on hold or it is seasonal: no reminders, not flagged as missed, and no supply counted down. It stays paused across days, unlike skip today, which is one day only. Off by default."
         }
       }
     }

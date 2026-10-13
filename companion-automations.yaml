@@ -51,7 +51,10 @@
               patient: "{{ state_attr(ent, 'patient') }}"
               meds: "{{ state_attr(ent, 'medications') }}"
               days: "{{ state_attr(ent, 'days') or ['mon','tue','wed','thu','fri','sat','sun'] }}"
-              scheduled: "{{ (today in days) if state_attr(ent, 'scheduled_today') is none else state_attr(ent, 'scheduled_today') }}"
+              # Paused (suspended until resumed): treat as not scheduled, so it
+              # never reminds or escalates until the pause toggle is switched off.
+              paused: "{{ state_attr(ent, 'paused') | default(false, true) }}"
+              scheduled: "{{ ((today in days) if state_attr(ent, 'scheduled_today') is none else state_attr(ent, 'scheduled_today')) and not paused }}"
               notify_service: "{{ state_attr(ent, 'notify_service') or default_notify }}"
               nag_minutes: "{{ state_attr(ent, 'nag_minutes') | int(45) }}"
               nag_interval: "{{ state_attr(ent, 'nag_interval') | int(15) }}"
@@ -72,7 +75,7 @@
                      and t.attributes.patient == patient
                      and t.attributes.dose_time == dtime %}
                 {% set ta = t.attributes %}
-                {% set th = (t.state == 'on') or (ta.skipped_today | default(false, true)) %}
+                {% set th = (t.state == 'on') or (ta.skipped_today | default(false, true)) or (ta.paused | default(false, true)) %}
                 {% set tsch = (today in (ta.days or week)) if ta.scheduled_today is none else ta.scheduled_today %}
                 {% set tsu = ta.snooze_until %}
                 {% set tref = [as_timestamp(today_at(dtime)), (as_timestamp(tsu) if tsu else 0)] | max %}

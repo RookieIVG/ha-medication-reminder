@@ -481,10 +481,35 @@ class MedicationPlanSensor(SensorEntity):
     def native_value(self) -> str:
         return self._plan_date().isoformat()
 
+    def _paused_keys(self) -> set:
+        """(time, meds) of this patient's doses currently paused (suspended)."""
+        keys = set()
+        for s in self.hass.states.async_all("switch"):
+            if s.attributes.get("patient") != self._patient:
+                continue
+            if s.attributes.get("paused"):
+                keys.add(
+                    (
+                        str(s.attributes.get("dose_time")),
+                        str(s.attributes.get("medications")),
+                    )
+                )
+        return keys
+
+    def _active_doses(self) -> list:
+        """The configured doses minus any that are paused, so a suspended med is
+        left out of the pill-box plan."""
+        paused = self._paused_keys()
+        return [
+            d
+            for d in self._doses
+            if (str(d.get(CONF_TIME))[:5], str(d.get(CONF_MEDS))) not in paused
+        ]
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         day = self._plan_date()
-        plan = build_day_plan(self._doses, self._supplies, self._details, day)
+        plan = build_day_plan(self._active_doses(), self._supplies, self._details, day)
         long = f"{day.strftime('%A')} {day.day} {day.strftime('%B %Y')}"
         return {
             "patient": self._patient,
@@ -510,10 +535,22 @@ class MedicationPlanSensor(SensorEntity):
 
     @callback
     def _on_offset_changed(self, event: Event) -> None:
+        entity_id = event.data.get("entity_id", "")
         registry = er.async_get(self.hass)
         mine = registry.async_get_entity_id("number", DOMAIN, self._offset_unique_id)
-        if event.data.get("entity_id") == mine:
+        if entity_id == mine:
             self.async_write_ha_state()
+            return
+        # Recompute when one of this patient's doses is paused or resumed, since a
+        # paused med drops out of the plan.
+        if entity_id.startswith("switch."):
+            new = event.data.get("new_state")
+            if new is None or new.attributes.get("patient") != self._patient:
+                return
+            old = event.data.get("old_state")
+            old_paused = old.attributes.get("paused") if old is not None else None
+            if new.attributes.get("paused") != old_paused:
+                self.async_write_ha_state()
 
     @callback
     def _midnight(self, _now) -> None:

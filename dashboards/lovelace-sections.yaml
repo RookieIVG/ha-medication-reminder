@@ -180,6 +180,22 @@ views:
                 {% endfor %}
             sort:
               method: name
+          # 3d. Pause (opt-in): a toggle per scheduled dose to suspend a med until
+          # resumed (no reminders, not overdue, no supply counted, kept paused
+          # across days). Shows only when the pause option is on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Pause a medication
+              show_header_toggle: false
+            filter:
+              template: >
+                {% for s in states.switch if s.attributes.pause_control is defined %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
       - type: grid
         cards:
           # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
