@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.41.2] - 2026-10-12
 ### Fixed
 - Supply counts no longer drift above what is on hand. A dose marked given decrements its supply only when the integration catches the mark as a live `off -> on` event; if that event landed while the supply entity was not listening (an entry reload, which the options flow triggers on every change, or a restart between the mark and startup), the dose still restored as given but the decrement was lost, leaving the count high with no trail. The supply now catches up on load, re-counting any dose marked given for the current day that it has not already recorded, deduped so it can only recover a missed decrement and never double-count. Separately, the per-dose tracking (the once-per-day dedupe, the scheduled-today check, and the un-mark refund) is now keyed on the medication day, using the patient reset-time boundary rather than the raw calendar date, so a dose taken after midnight no longer shares a date with the next day's dose and silently cancels its decrement.
 
