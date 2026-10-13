@@ -438,18 +438,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             dose[CONF_INTERVAL_DAYS] = int(
                 user_input.get(CONF_INTERVAL_DAYS, DEFAULT_INTERVAL_DAYS)
             )
-            dose[CONF_ANCHOR_DATE] = str(
-                user_input.get(CONF_ANCHOR_DATE) or dt_util.now().date().isoformat()
-            )[:10]
             dose[CONF_DAYS] = list(DEFAULT_DAYS)
         elif stype == SCHEDULE_CYCLE:
             dose[CONF_CYCLE_ON] = int(user_input.get(CONF_CYCLE_ON, DEFAULT_CYCLE_ON))
             dose[CONF_CYCLE_OFF] = int(
                 user_input.get(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF)
             )
-            dose[CONF_ANCHOR_DATE] = str(
-                user_input.get(CONF_ANCHOR_DATE) or dt_util.now().date().isoformat()
-            )[:10]
             dose[CONF_DAYS] = list(DEFAULT_DAYS)
         elif stype == SCHEDULE_MONTHLY:
             dose[CONF_MONTH_DAYS] = [
@@ -469,6 +463,18 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             )
         else:
             dose[CONF_DAYS] = user_input.get(CONF_DAYS) or list(DEFAULT_DAYS)
+        # Start date (anchor): honoured as a universal "no reminders before this
+        # date" by is_due for every scheduled type. For interval and cycle it is
+        # also the cadence origin, so there it defaults to today when left blank;
+        # for daily/weekly and monthly it is stored only when a date is given.
+        if stype in (SCHEDULE_INTERVAL, SCHEDULE_CYCLE):
+            dose[CONF_ANCHOR_DATE] = str(
+                user_input.get(CONF_ANCHOR_DATE) or dt_util.now().date().isoformat()
+            )[:10]
+        elif stype != SCHEDULE_PRN:
+            anchor = user_input.get(CONF_ANCHOR_DATE)
+            if anchor:
+                dose[CONF_ANCHOR_DATE] = str(anchor)[:10]
         return dose
 
     def _dose_schema(self, d: dict[str, Any]) -> vol.Schema:
@@ -487,6 +493,14 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             vol.Required(CONF_MEDS, default=d[CONF_MEDS])
             if d.get(CONF_MEDS)
             else vol.Required(CONF_MEDS)
+        )
+        # Optional start date: pre-filled only when the dose already has one, so a
+        # new dose leaves it blank (no start constraint) instead of defaulting to
+        # today, which looked like the chosen date reverting.
+        anchor_marker = (
+            vol.Optional(CONF_ANCHOR_DATE, default=str(d[CONF_ANCHOR_DATE])[:10])
+            if d.get(CONF_ANCHOR_DATE)
+            else vol.Optional(CONF_ANCHOR_DATE)
         )
         return vol.Schema(
             {
@@ -509,10 +523,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_CYCLE_OFF, default=int(_val(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF))
                 ): _cycle_selector(0),
-                vol.Optional(
-                    CONF_ANCHOR_DATE,
-                    default=d.get(CONF_ANCHOR_DATE) or dt_util.now().date().isoformat(),
-                ): selector.DateSelector(),
+                anchor_marker: selector.DateSelector(),
                 vol.Optional(
                     CONF_MONTH_DAYS,
                     default=[str(x) for x in _val(CONF_MONTH_DAYS, DEFAULT_MONTH_DAYS)],

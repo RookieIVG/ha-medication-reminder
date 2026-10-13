@@ -279,23 +279,23 @@ def is_due(data, on_date):
         # As-needed: never on a schedule, so it is never "due" and never nags.
         # Doses are still logged manually (which decrements supply).
         return False
+    # Start date (anchor): a universal "not before" guard for every scheduled
+    # type, so a dose with a future start date does not remind until that date.
+    # For interval and cycle the anchor is also the cadence origin (used below).
+    anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
+    if anchor is not None and on_date < anchor:
+        return False
     if stype == SCHEDULE_INTERVAL:
         n = _interval_n(data)
-        anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
         if anchor is None:
             # No anchor: fall back to a fixed reference so it stays deterministic.
             return on_date.toordinal() % n == 0
-        if on_date < anchor:
-            return False
         return (on_date - anchor).days % n == 0
     if stype == SCHEDULE_CYCLE:
         on_days, off_days = _cycle_days(data)
         period = on_days + off_days
-        anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
         if anchor is None:
             return on_date.toordinal() % period < on_days
-        if on_date < anchor:
-            return False
         return (on_date - anchor).days % period < on_days
     if stype == SCHEDULE_MONTHLY:
         last = _last_day_of_month(on_date)

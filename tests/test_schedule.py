@@ -208,6 +208,46 @@ def test_dpw_monthly():
     assert abs(doses_per_week(m) - (2 * 12.0 / 52.0)) < 1e-9
 
 
+# --- Start date (anchor) applies to any schedule type ----------------------
+
+def test_weekday_not_due_before_start_date():
+    # A daily/weekly dose with a future start date does not fire until then.
+    wd = WEEKDAYS[MON.weekday()]
+    d = {"days": [wd], "anchor_date": "2026-06-08"}  # the following Monday
+    assert is_due(d, MON) is False  # 2026-06-01, before the start date
+    assert is_due(d, date(2026, 6, 8)) is True  # on the start date (a Monday)
+
+
+def test_weekday_due_on_and_after_start_date():
+    d = {"days": WEEKDAYS, "anchor_date": "2026-06-05"}  # daily from the 5th
+    assert is_due(d, date(2026, 6, 4)) is False
+    assert is_due(d, date(2026, 6, 5)) is True
+    assert is_due(d, date(2026, 6, 6)) is True
+
+
+def test_weekday_no_anchor_unchanged():
+    # No start date behaves exactly as before (daily), so existing doses are
+    # unaffected.
+    assert is_due({"days": WEEKDAYS}, MON) is True
+
+
+def test_monthly_not_due_before_start_date():
+    m = {
+        "schedule_type": "monthly",
+        "month_days": [1, 15],
+        "anchor_date": "2026-07-01",
+    }
+    assert is_due(m, date(2026, 6, 15)) is False  # a chosen day, but before start
+    assert is_due(m, date(2026, 7, 1)) is True  # chosen day, on the start date
+    assert is_due(m, date(2026, 7, 15)) is True
+
+
+def test_anchor_blank_or_bad_is_no_constraint():
+    wd = WEEKDAYS[MON.weekday()]
+    assert is_due({"days": [wd], "anchor_date": ""}, MON) is True
+    assert is_due({"days": [wd], "anchor_date": "not-a-date"}, MON) is True
+
+
 # --- doses_per_week (run-out estimate cadence) -----------------------------
 
 def test_dpw_weekdays_is_len_days():
