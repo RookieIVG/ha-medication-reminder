@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.42.0] - 2026-10-13
 ### Added
 - Pause (suspend) a medication. A new opt-in **Pause switches** setting (Reminder settings, off by default) adds a pause toggle to each scheduled dose. Turn it on to suspend that med until you switch it back off, for example when a doctor puts it on hold or a med is seasonal: no reminders, nothing flagged as missed or overdue, the dose left out of the "all doses given" summary and the pill-box plan, and no supply counted down. Unlike skip today (which clears one day and comes back at the daily reset), a pause persists across days and restarts until resumed. The pause state lives on the dose and is honoured only while the option is on, so turning the option off resumes every dose and removes the toggles. The bundled dashboards show a "Pause a medication" card (hidden unless the option is on), and the reminder blueprint and companion automations treat a paused dose as not scheduled. Pause toggles are added for scheduled doses only; as-needed (PRN) meds have no schedule to suspend. **Re-import the reminder blueprint** (or re-paste the companion automations) so a paused dose stops reminding. (Requested by a community member on the Home Assistant forum, tracked in #41.)
 
