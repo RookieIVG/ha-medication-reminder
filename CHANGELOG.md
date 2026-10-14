@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.43.0] - 2026-10-13
 ### Added
 - Strict reminders. A new **Strict reminders** input on the reminder blueprint (off by default) hides the Remind me later and Skip today buttons from the reminder and missed-dose notifications, leaving only Mark given, so a reminder can only be cleared by actually marking the dose given. For people who rely on the nag and do not want an easy dismiss. The snooze and skip services still work from the dashboard and automations; this only changes the notification buttons, and it is per automation, so one patient can run strict while another does not. Default is unchanged (all three buttons). **Re-import the reminder blueprint** (or set `strict_reminders` in the companion automations) to use it. (Requested by a community member on the Home Assistant forum, tracked in #43.)
 
