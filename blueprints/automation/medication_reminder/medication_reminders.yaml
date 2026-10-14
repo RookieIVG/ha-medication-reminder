@@ -41,6 +41,17 @@ blueprint:
       default: true
       selector:
         boolean:
+    strict_reminders:
+      name: Strict reminders (hide snooze and skip buttons)
+      description: >
+        Only let a reminder clear by marking the dose given: hides the Remind me
+        later and Skip today buttons on the reminder and missed-dose
+        notifications, leaving just Mark given. For people who rely on the nag and
+        do not want an easy dismiss. Leave off to keep all the buttons. The snooze
+        and skip services still work from the dashboard and automations.
+      default: false
+      selector:
+        boolean:
     dashboard_path:
       name: Open dashboard when the notification is tapped
       description: >
@@ -59,6 +70,7 @@ variables:
   default_notify: !input fallback_notify
   critical_missed: !input critical_missed
   group_reminders: !input group_reminders
+  strict_reminders: !input strict_reminders
   dashboard_path: !input dashboard_path
   nav: >-
     {{ {"clickAction": dashboard_path, "url": dashboard_path} if dashboard_path else {} }}
@@ -122,6 +134,15 @@ action:
             is_rep: "{{ slot_reminder and oid == slot_reminder[0] }}"
             slot_meds: "{{ slot_reminder | map('regex_replace', '^', 'switch.') | map('state_attr', 'medications') | list | join('; ') }}"
             gtag: "{{ ('med_grp_' ~ patient ~ '_' ~ dtime) | replace(' ', '_') | replace(':', '') }}"
+            # Notification action buttons. Strict mode leaves only Mark given, so
+            # the reminder can only be cleared by taking the dose; otherwise the
+            # full Mark given / Remind me later / Skip today set.
+            actions: >-
+              {{ [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"}]
+                 if strict_reminders else
+                 [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
+                  {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
+                  {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}] }}
         - choose:
             # Reminder, per-dose: every due dose when grouping is off, or a dose
             # that is the only one due in its slot. Identical to the classic
@@ -134,11 +155,7 @@ action:
                     title: "💊 {{ patient }} ({{ clock }})"
                     message: "Give {{ patient }}'s medication: {{ meds }}. Has it been given?"
                     data: >-
-                      {{ {"tag": "med_" ~ oid,
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
-                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
-                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
-                         | combine(nav) }}
+                      {{ {"tag": "med_" ~ oid, "actions": actions} | combine(nav) }}
             # Reminder, grouped: several doses due in the slot. One message from
             # the slot's first dose; tap it to open the dashboard and act there.
             - conditions:
@@ -162,15 +179,11 @@ action:
                           "channel": "Medication critical", "importance": "high",
                           "push": {"interruption-level": "critical",
                                    "sound": {"name": "default", "critical": 1, "volume": 1.0}},
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
-                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
-                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}
+                          "actions": actions}
                          if critical_missed else
                          {"tag": "med_missed_" ~ oid, "priority": "high", "ttl": 0,
                           "push": {"interruption-level": "time-sensitive"},
-                          "actions": [{"action": "MED_GIVEN_" ~ oid, "title": "✅ Mark given"},
-                                      {"action": "MED_SNOOZE_" ~ oid, "title": "⏰ Remind me later"},
-                                      {"action": "MED_SKIP_" ~ oid, "title": "⏭️ Skip today"}]}) | combine(nav) }}
+                          "actions": actions}) | combine(nav) }}
                 - action: "notify.{{ notify_service }}"
                   data:
                     title: "⚠️ MISSED: {{ patient }} ({{ clock }})"
