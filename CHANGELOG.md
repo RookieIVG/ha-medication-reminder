@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.44.0] - 2026-10-17
 ### Added
 - Add a medication at several times in one go. The Add a dose form has a new optional **Additional times** field: enter extra 24-hour times (comma, semicolon, or space separated, e.g. `14:00, 20:00`) and one dose is created per time, all sharing the same medications, schedule, and options, so a twice or three-times-daily med no longer means filling in the whole form again for each time. Leave it blank for a single time. Invalid entries are reported before anything is saved, and the usual duplicate check is applied to each time. Editing is unchanged (one time per dose, since each time is its own dose with its own state). (Requested by a community member on the Home Assistant forum, tracked in #44.)
 - Medication unit / form labels. A tracked supply can now carry a **Unit / form** (tablets, capsules, drops, ml, bottles, syringes, pens, or a custom value), set when adding or editing the supply. It is used as the entity's unit, so the stock count and the adjustable-amount field read e.g. "30 tablets" or "5 drops" wherever they are shown (device page, cards, dashboards), instead of a bare number. Optional and blank by default, so existing supplies are unchanged. The quantities themselves are unchanged; this only labels them. (Requested by a community member on the Home Assistant forum, tracked in #48.)
