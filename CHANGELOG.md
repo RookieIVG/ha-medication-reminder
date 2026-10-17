@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Adherence streak. A new opt-in **Adherence streak** setting (Reminder settings, off by default) adds a `sensor.<patient>_adherence_streak` whose value is the number of consecutive completed days on which every scheduled dose was taken. It also reports `longest_streak`, `last_missed`, and an `adherence_percent` over the last 30 days. A skipped dose (skip today) keeps the streak but counts against the percentage; a missed dose breaks it; a day with no doses due is neutral; and a gap (Home Assistant was off) ends the current streak. Because the integration otherwise forgets each day at the reset, the sensor keeps a small persisted per-day history (last 120 days): at the daily reset the day that just ended is scored from the doses given or skipped during it. As-needed (PRN) doses are not counted. Turning the option off removes the sensor but keeps the history, so re-enabling resumes where it left off. (Requested on the tracker, #39.)
+
 ## [0.44.0] - 2026-10-17
 ### Added
 - Add a medication at several times in one go. The Add a dose form has a new optional **Additional times** field: enter extra 24-hour times (comma, semicolon, or space separated, e.g. `14:00, 20:00`) and one dose is created per time, all sharing the same medications, schedule, and options, so a twice or three-times-daily med no longer means filling in the whole form again for each time. Leave it blank for a single time. Invalid entries are reported before anything is saved, and the usual duplicate check is applied to each time. Editing is unchanged (one time per dose, since each time is its own dose with its own state). (Requested by a community member on the Home Assistant forum, tracked in #44.)

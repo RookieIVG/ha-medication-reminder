@@ -44,6 +44,7 @@ CONF_PLAN_VIEW = (
 CONF_PAUSE_SWITCHES = (
     "pause_switches"  # opt-in per-dose pause toggle (suspend a med until resumed)
 )
+CONF_STREAK = "streak"  # opt-in per-patient adherence streak sensor
 
 # Per-dose schedule type and its interval / cycle settings.
 CONF_SCHEDULE_TYPE = "schedule_type"
@@ -115,6 +116,7 @@ DEFAULT_TIME_FORMAT = "12h"
 DEFAULT_SKIP_BUTTONS = False
 DEFAULT_PLAN_VIEW = False
 DEFAULT_PAUSE_SWITCHES = False
+DEFAULT_STREAK = False
 DEFAULT_SNOOZE_MINUTES = 30
 DEFAULT_SUPPLY_UNITS = 30
 DEFAULT_SUPPLY_UNIT = ""  # no unit label by default (bare number)
@@ -123,6 +125,13 @@ DEFAULT_SUPPLY_PER_DOSE = 1
 # Common medication units/forms offered for a supply (a custom value is allowed).
 # Used only as a display unit on the supply and amount entities.
 SUPPLY_UNITS = ["tablets", "capsules", "drops", "ml", "bottles", "syringes", "pens"]
+
+# Per-day outcome codes for the adherence streak (see streak_stats / classify_day).
+OUTCOME_TAKEN = "taken"  # every dose due that day was given
+OUTCOME_SKIPPED = "skipped"  # all due doses handled, but at least one was skipped
+OUTCOME_MISSED = "missed"  # a due dose was neither given nor skipped
+OUTCOME_NONE = "none"  # no doses were due that day (neutral, does not break a streak)
+STREAK_WINDOW_DAYS = 30  # trailing window for the adherence percentage
 DEFAULT_SUPPLY_THRESHOLD = 10
 DEFAULT_SUPPLY_REFILL_TO = 30
 DEFAULT_SUPPLY_REFILL_ADD = False
@@ -176,6 +185,99 @@ def dose_handled(state, skipped_today):
     a single definition.
     """
     return state == "on" or bool(skipped_today)
+
+
+def classify_day(scheduled, handled):
+    """The adherence outcome for a day.
+
+    `scheduled` is the set of dose keys due that day; `handled` maps a handled
+    dose key to "given" or "skipped". Returns one of OUTCOME_NONE (nothing due),
+    OUTCOME_MISSED (a due dose was neither given nor skipped), OUTCOME_SKIPPED
+    (all due doses handled but at least one was skipped), or OUTCOME_TAKEN (all
+    due doses given). A partial dose counts as given, since the dose itself was
+    taken.
+    """
+    if not scheduled:
+        return OUTCOME_NONE
+    any_skipped = False
+    for key in scheduled:
+        state = handled.get(key)
+        if state is None:
+            return OUTCOME_MISSED
+        if state == "skipped":
+            any_skipped = True
+    return OUTCOME_SKIPPED if any_skipped else OUTCOME_TAKEN
+
+
+def streak_stats(outcomes, today, window=STREAK_WINDOW_DAYS):
+    """Adherence figures from a {date-ISO: outcome} log of completed days.
+
+    `today` (a date or ISO string) is the in-progress day and is excluded. The
+    streak counts consecutive completed days, most recent first, that were taken
+    or skipped; a "none" day (nothing due) is neutral and skipped over, while a
+    "missed" day or a gap (a date with no record, e.g. Home Assistant was off)
+    ends it. Adherence is taken / (taken + skipped + missed) over the trailing
+    `window` days, so a skipped day keeps the streak but lowers adherence.
+
+    Returns current_streak, longest_streak, last_missed (ISO or None), and
+    adherence (0-100 int, or None when no days in the window had doses due).
+    """
+    log: dict[date, str] = {}
+    for key, value in (outcomes or {}).items():
+        try:
+            log[date.fromisoformat(str(key)[:10])] = value
+        except (ValueError, TypeError):
+            continue
+    if isinstance(today, str):
+        today = date.fromisoformat(today[:10])
+
+    earliest = min(log) if log else today
+    current = 0
+    day = today - timedelta(days=1)
+    while day >= earliest:
+        outcome = log.get(day)
+        if outcome is None or outcome == OUTCOME_MISSED:
+            break
+        if outcome in (OUTCOME_TAKEN, OUTCOME_SKIPPED):
+            current += 1
+        day -= timedelta(days=1)
+
+    longest = run = 0
+    prev = None
+    for day in sorted(log):
+        if prev is not None and (day - prev).days != 1:
+            run = 0  # a gap in the record breaks continuity
+        outcome = log[day]
+        if outcome == OUTCOME_MISSED:
+            run = 0
+        elif outcome in (OUTCOME_TAKEN, OUTCOME_SKIPPED):
+            run += 1
+            longest = max(longest, run)
+        prev = day
+    longest = max(longest, current)
+
+    missed = [day for day, outcome in log.items() if outcome == OUTCOME_MISSED]
+    last_missed = max(missed).isoformat() if missed else None
+
+    start = today - timedelta(days=window)
+    taken = skipped = missed_n = 0
+    for day, outcome in log.items():
+        if start <= day < today:
+            if outcome == OUTCOME_TAKEN:
+                taken += 1
+            elif outcome == OUTCOME_SKIPPED:
+                skipped += 1
+            elif outcome == OUTCOME_MISSED:
+                missed_n += 1
+    denom = taken + skipped + missed_n
+    adherence = round(100 * taken / denom) if denom else None
+
+    return {
+        "current_streak": current,
+        "longest_streak": longest,
+        "last_missed": last_missed,
+        "adherence": adherence,
+    }
 
 
 def partial_skip_meds(meds, schedule_type):

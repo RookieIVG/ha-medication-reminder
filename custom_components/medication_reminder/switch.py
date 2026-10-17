@@ -569,6 +569,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
                 {
                     "entity_id": self.entity_id,
                     "patient": self._patient,
+                    "dose_time": self._time,
                     "medications": self._meds,
                 },
             )
@@ -627,6 +628,7 @@ class MedicationDoseSwitch(SwitchEntity, RestoreEntity):
                 {
                     "entity_id": self.entity_id,
                     "patient": self._patient,
+                    "dose_time": self._time,
                     "medications": self._meds,
                 },
             )

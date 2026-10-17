@@ -43,6 +43,7 @@ from .const import (
     CONF_PATIENT_TYPE,
     CONF_PAUSE_SWITCHES,
     CONF_PLAN_VIEW,
+    CONF_STREAK,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
     CONF_SKIP_BUTTONS,
@@ -72,6 +73,7 @@ from .const import (
     DEFAULT_PATIENT_TYPE,
     DEFAULT_RESET_TIME,
     DEFAULT_PAUSE_SWITCHES,
+    DEFAULT_STREAK,
     DEFAULT_PLAN_VIEW,
     DEFAULT_SKIP_BUTTONS,
     DEFAULT_SCHEDULE_TYPE,
@@ -1140,6 +1142,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             options[CONF_PAUSE_SWITCHES] = bool(
                 user_input.get(CONF_PAUSE_SWITCHES, False)
             )
+            options[CONF_STREAK] = bool(user_input.get(CONF_STREAK, False))
             # Turning the plan view off removes its entities so they do not linger.
             if self._entry.options.get(CONF_PLAN_VIEW) and not options[CONF_PLAN_VIEW]:
                 self._prune_plan_entities()
@@ -1150,6 +1153,10 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 and not options[CONF_PAUSE_SWITCHES]
             ):
                 self._prune_pause_entities()
+            # Turning the streak off removes its sensor (the history store stays,
+            # so re-enabling later resumes from where it left off).
+            if self._entry.options.get(CONF_STREAK) and not options[CONF_STREAK]:
+                self._prune_streak_entities()
             return self.async_create_entry(title="", data=options)
         opts = self._entry.options
         schema = vol.Schema(
@@ -1189,9 +1196,22 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                     CONF_PAUSE_SWITCHES,
                     default=bool(opts.get(CONF_PAUSE_SWITCHES, DEFAULT_PAUSE_SWITCHES)),
                 ): selector.BooleanSelector(),
+                vol.Optional(
+                    CONF_STREAK,
+                    default=bool(opts.get(CONF_STREAK, DEFAULT_STREAK)),
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
+
+    def _prune_streak_entities(self) -> None:
+        """Remove the adherence-streak sensor when the option is turned off, so it
+        does not linger as unavailable."""
+        eid = self._entry.entry_id
+        registry = er.async_get(self.hass)
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{eid}_streak")
+        if entity_id:
+            registry.async_remove(entity_id)
 
     def _prune_plan_entities(self) -> None:
         """Remove the pill-box plan entities (offset number + plan sensor) when

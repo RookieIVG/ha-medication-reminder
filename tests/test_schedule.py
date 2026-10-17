@@ -504,3 +504,76 @@ def test_dose_consumption_handles_bad_input():
     assert dose_consumption("x", 2) == 2.0
     assert dose_consumption(0, "y") == 0.0
     assert dose_consumption(0, 0) == 0.0
+
+
+# --- Adherence streak (classify_day / streak_stats) ------------------------
+
+def test_classify_day():
+    cd = const.classify_day
+    assert cd(set(), {}) == const.OUTCOME_NONE
+    assert cd({"a"}, {"a": "given"}) == const.OUTCOME_TAKEN
+    assert cd({"a", "b"}, {"a": "given", "b": "given"}) == const.OUTCOME_TAKEN
+    assert cd({"a", "b"}, {"a": "given", "b": "skipped"}) == const.OUTCOME_SKIPPED
+    assert cd({"a"}, {"a": "skipped"}) == const.OUTCOME_SKIPPED
+    assert cd({"a", "b"}, {"a": "given"}) == const.OUTCOME_MISSED  # b not handled
+
+
+TODAY = date(2026, 6, 10)  # in-progress day, excluded from the streak
+
+
+def test_streak_current_basic():
+    log = {"2026-06-07": "taken", "2026-06-08": "taken", "2026-06-09": "taken"}
+    s = const.streak_stats(log, TODAY)
+    assert s["current_streak"] == 3
+    assert s["longest_streak"] == 3
+    assert s["last_missed"] is None
+    assert s["adherence"] == 100
+
+
+def test_streak_missed_breaks_and_adherence():
+    log = {
+        "2026-06-06": "taken",
+        "2026-06-07": "missed",
+        "2026-06-08": "taken",
+        "2026-06-09": "taken",
+    }
+    s = const.streak_stats(log, TODAY)
+    assert s["current_streak"] == 2  # 08, 09
+    assert s["longest_streak"] == 2
+    assert s["last_missed"] == "2026-06-07"
+    assert s["adherence"] == 75  # 3 taken / 4 with doses
+
+
+def test_streak_skip_keeps_streak_but_lowers_adherence():
+    log = {"2026-06-07": "taken", "2026-06-08": "skipped", "2026-06-09": "taken"}
+    s = const.streak_stats(log, TODAY)
+    assert s["current_streak"] == 3  # a skipped day does not break the streak
+    assert s["adherence"] == 67  # 2 taken / 3 (skip counts against)
+
+
+def test_streak_none_day_is_neutral():
+    log = {"2026-06-07": "taken", "2026-06-08": "none", "2026-06-09": "taken"}
+    s = const.streak_stats(log, TODAY)
+    assert s["current_streak"] == 2  # none skipped over, not counted
+    assert s["adherence"] == 100  # none excluded from the window
+
+
+def test_streak_gap_breaks():
+    # Yesterday missing (Home Assistant was off) breaks the current streak.
+    log = {"2026-06-06": "taken", "2026-06-07": "taken"}
+    s = const.streak_stats(log, TODAY)
+    assert s["current_streak"] == 0
+    assert s["longest_streak"] == 2
+
+
+def test_streak_empty_and_only_none():
+    empty = const.streak_stats({}, TODAY)
+    assert empty == {
+        "current_streak": 0,
+        "longest_streak": 0,
+        "last_missed": None,
+        "adherence": None,
+    }
+    only_none = const.streak_stats({"2026-06-09": "none"}, TODAY)
+    assert only_none["current_streak"] == 0
+    assert only_none["adherence"] is None

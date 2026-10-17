@@ -29,6 +29,7 @@ from homeassistant.helpers.event import (
     async_track_time_change,
     async_track_time_interval,
 )
+from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
 
 from .const import (
@@ -39,18 +40,25 @@ from .const import (
     CONF_PLAN_VIEW,
     CONF_RESET_TIME,
     CONF_SCHEDULE_TYPE,
+    CONF_STREAK,
     CONF_SUPPLIES,
     CONF_TIME,
     DEFAULT_RESET_TIME,
     DOMAIN,
+    EVENT_DOSE_GIVEN,
     EVENT_DOSE_LOGGED,
+    EVENT_DOSE_SKIPPED,
+    EVENT_DOSE_UNDONE,
     SCHEDULE_PRN,
+    STREAK_WINDOW_DAYS,
     build_day_plan,
+    classify_day,
     current_medications,
     is_due,
     med_day,
     medication_summary_line,
     reset_hms,
+    streak_stats,
 )
 
 # Re-evaluate this often so "next dose" rolls forward as time passes.
@@ -87,6 +95,9 @@ async def async_setup_entry(
     # Pill-box plan view (opt-in): the per-day plan the dashboard card renders.
     if entry.options.get(CONF_PLAN_VIEW):
         entities.append(MedicationPlanSensor(entry, patient))
+    # Adherence streak (opt-in): consecutive days every scheduled dose was taken.
+    if entry.options.get(CONF_STREAK):
+        entities.append(MedicationStreakSensor(entry, patient, doses, reset_time))
     async_add_entities(entities)
 
 
@@ -555,3 +566,168 @@ class MedicationPlanSensor(SensorEntity):
     @callback
     def _midnight(self, _now) -> None:
         self.async_write_ha_state()
+
+
+class MedicationStreakSensor(SensorEntity):
+    """Adherence streak: consecutive completed days on which every scheduled dose
+    for this patient was taken.
+
+    A per-day outcome log is persisted, since the integration otherwise forgets
+    each day at the reset. At the daily reset the day that just ended is scored
+    from the doses given or skipped during it: taken (all given), skipped (all
+    handled, at least one skip-today), missed (a due dose neither given nor
+    skipped), or none (nothing due). The streak counts back from yesterday over
+    taken-or-skipped days; a skip keeps the streak but counts against the
+    adherence percentage, a "none" day is neutral, and a missed day or a gap
+    (Home Assistant was off) ends it. Created only when the option is on.
+    """
+
+    _attr_should_poll = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:fire"
+    _attr_native_unit_of_measurement = "days"
+
+    _STORAGE_VERSION = 1
+    _LOG_CAP_DAYS = 120  # how much day history to keep
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        doses: list[dict[str, Any]],
+        reset_time: str,
+    ) -> None:
+        self._entry_id = entry.entry_id
+        self._patient = patient
+        self._doses = doses
+        self._reset_time = reset_time
+        # Dose key -> "given" | "skipped" for the current medication day, rebuilt
+        # from the dose switches at startup and kept current by dose events.
+        self._handled: dict[str, str] = {}
+        self._outcomes: dict[str, str] = {}  # date ISO -> outcome, persisted
+        self._stats: dict[str, Any] = {}
+        self._store: Store | None = None
+        self._attr_name = "Adherence streak"
+        self._attr_unique_id = f"{entry.entry_id}_streak"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": patient,
+            "manufacturer": "Medication Reminder",
+        }
+
+    @staticmethod
+    def _dose_key(time: Any, meds: Any) -> str:
+        return f"{str(time)[:5]}|{str(meds)}"
+
+    def _today(self):
+        """The current medication day (reset-time bounded, not midnight)."""
+        return med_day(dt_util.now(), self._reset_time)
+
+    def _scheduled_keys(self, day) -> set:
+        """Keys of this patient's scheduled (non-PRN) doses due on `day`."""
+        keys = set()
+        for dose in self._doses:
+            if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN:
+                continue
+            if is_due(dose, day):
+                keys.add(self._dose_key(dose.get(CONF_TIME), dose.get(CONF_MEDS)))
+        return keys
+
+    def _recompute(self) -> None:
+        self._stats = streak_stats(self._outcomes, self._today())
+
+    @property
+    def native_value(self) -> int:
+        return int(self._stats.get("current_streak", 0))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "patient": self._patient,
+            "longest_streak": self._stats.get("longest_streak", 0),
+            "last_missed": self._stats.get("last_missed"),
+            "adherence_percent": self._stats.get("adherence"),
+            "window_days": STREAK_WINDOW_DAYS,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._store = Store(
+            self.hass, self._STORAGE_VERSION, f"{DOMAIN}.{self._entry_id}.streak"
+        )
+        data = await self._store.async_load() or {}
+        outcomes = data.get("outcomes")
+        if isinstance(outcomes, dict):
+            self._outcomes = {str(k): str(v) for k, v in outcomes.items()}
+        # Rebuild today's handled set from the dose switches, so a restart part
+        # way through the day keeps what has already been given or skipped.
+        self._seed_handled()
+        self._recompute()
+        # Dose events keep the handled set current through the day.
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOSE_GIVEN, self._make_handler("given"))
+        )
+        self.async_on_remove(
+            self.hass.bus.async_listen(
+                EVENT_DOSE_SKIPPED, self._make_handler("skipped")
+            )
+        )
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOSE_UNDONE, self._on_undone)
+        )
+        # Finalise the ending day at the daily reset.
+        hour, minute, second = reset_hms(self._reset_time)
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._finalize, hour=hour, minute=minute, second=second
+            )
+        )
+
+    @callback
+    def _seed_handled(self) -> None:
+        for state in self.hass.states.async_all("switch"):
+            attrs = state.attributes
+            if attrs.get("patient") != self._patient:
+                continue
+            if attrs.get("medications") is None:
+                continue  # not a dose switch (e.g. a pause toggle)
+            key = self._dose_key(attrs.get("dose_time"), attrs.get("medications"))
+            if state.state == "on":
+                self._handled[key] = "given"
+            elif attrs.get("skipped_today"):
+                self._handled[key] = "skipped"
+
+    def _make_handler(self, result: str):
+        @callback
+        def _handler(event: Event) -> None:
+            if event.data.get("patient") != self._patient:
+                return
+            key = self._dose_key(
+                event.data.get("dose_time"), event.data.get("medications")
+            )
+            self._handled[key] = result
+
+        return _handler
+
+    @callback
+    def _on_undone(self, event: Event) -> None:
+        if event.data.get("patient") != self._patient:
+            return
+        key = self._dose_key(event.data.get("dose_time"), event.data.get("medications"))
+        self._handled.pop(key, None)
+
+    @callback
+    def _finalize(self, _now) -> None:
+        """At the daily reset, score the day that just ended and append it."""
+        ending = self._today() - timedelta(days=1)
+        outcome = classify_day(self._scheduled_keys(ending), self._handled)
+        self._outcomes[ending.isoformat()] = outcome
+        cutoff = (self._today() - timedelta(days=self._LOG_CAP_DAYS)).isoformat()
+        self._outcomes = {d: o for d, o in self._outcomes.items() if d >= cutoff}
+        self._handled = {}
+        self._recompute()
+        self.async_write_ha_state()
+        if self._store is not None:
+            self.hass.async_create_task(
+                self._store.async_save({"outcomes": self._outcomes})
+            )
