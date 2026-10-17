@@ -54,6 +54,7 @@ from .const import (
     CONF_SUPPLY_REFILL_ADD,
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
+    CONF_SUPPLY_UNIT,
     CONF_SUPPLY_UNITS,
     CONF_TIME,
     CONF_TIME_FORMAT,
@@ -87,6 +88,7 @@ from .const import (
     SCHEDULE_INTERVAL,
     SCHEDULE_MONTHLY,
     SCHEDULE_PRN,
+    SUPPLY_UNITS,
     dose_max_per_day,
     dose_min_interval_hours,
     expand_dose_times,
@@ -274,6 +276,17 @@ def _cost_selector() -> selector.NumberSelector:
             min=0,
             step=0.01,
             mode=selector.NumberSelectorMode.BOX,
+        )
+    )
+
+
+def _unit_selector() -> selector.SelectSelector:
+    """A dropdown of common medication units/forms, with a custom value allowed."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=list(SUPPLY_UNITS),
+            mode=selector.SelectSelectorMode.DROPDOWN,
+            custom_value=True,
         )
     )
 
@@ -851,6 +864,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         return {
             CONF_SUPPLY_MED: med,
             CONF_SUPPLY_UNITS: int(user_input[CONF_SUPPLY_UNITS]),
+            CONF_SUPPLY_UNIT: str(user_input.get(CONF_SUPPLY_UNIT, "") or "").strip(),
             CONF_SUPPLY_PER_DOSE: float(user_input[CONF_SUPPLY_PER_DOSE]),
             CONF_SUPPLY_THRESHOLD: int(user_input[CONF_SUPPLY_THRESHOLD]),
             CONF_SUPPLY_REFILL_TO: int(user_input[CONF_SUPPLY_REFILL_TO]),
@@ -875,11 +889,19 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
 
     def _supply_fields(self, s: dict[str, Any]) -> dict[Any, Any]:
         """The supply count fields, pre-filled from record s (empty s = defaults)."""
+        # Optional unit/form: pre-filled only when set, so a new supply leaves it
+        # blank (no unit) rather than defaulting to a value.
+        unit_marker = (
+            vol.Optional(CONF_SUPPLY_UNIT, default=str(s[CONF_SUPPLY_UNIT]))
+            if s.get(CONF_SUPPLY_UNIT)
+            else vol.Optional(CONF_SUPPLY_UNIT)
+        )
         return {
             vol.Required(
                 CONF_SUPPLY_UNITS,
                 default=int(s.get(CONF_SUPPLY_UNITS, DEFAULT_SUPPLY_UNITS)),
             ): _count_selector(),
+            unit_marker: _unit_selector(),
             vol.Required(
                 CONF_SUPPLY_PER_DOSE,
                 default=float(s.get(CONF_SUPPLY_PER_DOSE, DEFAULT_SUPPLY_PER_DOSE)),

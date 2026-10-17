@@ -355,6 +355,23 @@ def test_meds_contains_empty_is_false():
     assert meds_contains("", "Med A") is False
 
 
+def test_supply_unit_for():
+    supplies = [
+        {"supply_med": "Apoquel", "supply_unit": "tablets"},
+        {"supply_med": "Vitamin D3", "supply_unit": "drops"},
+        {"supply_med": "Aspirin"},  # tracked, but no unit set
+    ]
+    suf = const.supply_unit_for
+    assert suf("Apoquel", supplies) == "tablets"
+    assert suf("Vitamin D3", supplies) == "drops"
+    # A dose grouping meds takes the first matching supply that has a unit.
+    assert suf("Aspirin & Apoquel", supplies) == "tablets"
+    assert suf("Aspirin", supplies) == ""  # matched, but no unit
+    assert suf("Unknown", supplies) == ""
+    assert suf("Apoquel", []) == ""
+    assert suf("Apoquel", None) == ""
+
+
 def test_dose_min_interval_hours():
     assert dose_min_interval_hours({"min_interval_hours": 4}) == 4.0
     assert dose_min_interval_hours({}) == 0.0

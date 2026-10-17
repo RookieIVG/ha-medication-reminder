@@ -73,6 +73,7 @@ DEFAULT_ASK_UNITS = False
 CONF_SUPPLIES = "supplies"
 CONF_SUPPLY_MED = "supply_med"
 CONF_SUPPLY_UNITS = "supply_units"
+CONF_SUPPLY_UNIT = "supply_unit"  # display unit/form (e.g. tablets, drops); "" = none
 CONF_SUPPLY_PER_DOSE = "supply_per_dose"
 CONF_SUPPLY_THRESHOLD = "supply_threshold"
 CONF_SUPPLY_REFILL_TO = "supply_refill_to"
@@ -116,7 +117,12 @@ DEFAULT_PLAN_VIEW = False
 DEFAULT_PAUSE_SWITCHES = False
 DEFAULT_SNOOZE_MINUTES = 30
 DEFAULT_SUPPLY_UNITS = 30
+DEFAULT_SUPPLY_UNIT = ""  # no unit label by default (bare number)
 DEFAULT_SUPPLY_PER_DOSE = 1
+
+# Common medication units/forms offered for a supply (a custom value is allowed).
+# Used only as a display unit on the supply and amount entities.
+SUPPLY_UNITS = ["tablets", "capsules", "drops", "ml", "bottles", "syringes", "pens"]
 DEFAULT_SUPPLY_THRESHOLD = 10
 DEFAULT_SUPPLY_REFILL_TO = 30
 DEFAULT_SUPPLY_REFILL_ADD = False
@@ -214,6 +220,19 @@ def normalize_skipped(value):
 def med_skipped(skipped, med_name):
     """True if `med_name` is in a dose's skipped-medications list."""
     return any(meds_contains(entry, med_name) for entry in normalize_skipped(skipped))
+
+
+def supply_unit_for(meds, supplies):
+    """The display unit of the first tracked supply whose medication appears in
+    `meds` (a dose's medications string), or '' if none has a unit set. Lets a
+    dose's amount field show the same unit as its medication's stock."""
+    for supply in supplies or []:
+        med = str(supply.get(CONF_SUPPLY_MED, "")).strip()
+        if med and meds_contains(meds, med):
+            unit = str(supply.get(CONF_SUPPLY_UNIT, "") or "").strip()
+            if unit:
+                return unit
+    return ""
 
 
 def normalize_time(value):

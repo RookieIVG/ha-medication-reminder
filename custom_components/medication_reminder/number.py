@@ -62,6 +62,7 @@ from .const import (
     CONF_SUPPLY_REFILL_ADD,
     CONF_SUPPLY_REFILL_TO,
     CONF_SUPPLY_THRESHOLD,
+    CONF_SUPPLY_UNIT,
     CONF_SUPPLY_UNITS,
     CONF_TIME,
     DEFAULT_RESET_TIME,
@@ -88,6 +89,7 @@ from .const import (
     resolve_mark_amount,
     restore_refills,
     supply_cost_breakdown,
+    supply_unit_for,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -114,7 +116,11 @@ async def async_setup_entry(
             continue
         if (dose.get(CONF_SCHEDULE_TYPE) or "") == SCHEDULE_PRN:
             continue
-        entities.append(MedicationDoseAmountNumber(entry, patient, dose))
+        entities.append(
+            MedicationDoseAmountNumber(
+                entry, patient, dose, supply_unit_for(dose.get(CONF_MEDS, ""), supplies)
+            )
+        )
     # Pill-box plan view (opt-in): the day-offset the plan sensor shows.
     if entry.options.get(CONF_PLAN_VIEW):
         entities.append(MedicationPlanOffsetNumber(entry, patient))
@@ -157,6 +163,11 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
             supply.get(CONF_SUPPLY_REFILL_ADD, DEFAULT_SUPPLY_REFILL_ADD)
         )
         self._value = float(supply.get(CONF_SUPPLY_UNITS, DEFAULT_SUPPLY_UNITS))
+        # Optional display unit/form (tablets, drops, ml, syringes, ...). Set as
+        # the entity's native unit so the count reads e.g. "30 tablets" wherever
+        # it is shown; "" leaves the number bare.
+        self._unit = str(supply.get(CONF_SUPPLY_UNIT, "") or "").strip()
+        self._attr_native_unit_of_measurement = self._unit or None
         # Per-unit cost (0 = untracked); drives the optional cost attributes.
         self._cost = float(supply.get(CONF_SUPPLY_COST, DEFAULT_SUPPLY_COST) or 0)
         # Prescription refills remaining (0 = untracked). The configured value is
@@ -187,6 +198,7 @@ class MedicationSupplyNumber(NumberEntity, RestoreEntity):
         attrs: dict[str, Any] = {
             "patient": self._patient,
             "medication": self._med,
+            "unit": self._unit,
             "per_dose": self._per_dose,
             "threshold": self._threshold,
             "refill_to": self._refill_to,
@@ -495,10 +507,18 @@ class MedicationDoseAmountNumber(RestoreEntity, NumberEntity):
     _attr_native_step = 0.25
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, entry: ConfigEntry, patient: str, dose: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        patient: str,
+        dose: dict[str, Any],
+        unit: str = "",
+    ) -> None:
         self._patient = patient
         self._time = str(dose[CONF_TIME])[:5]
         self._meds = str(dose[CONF_MEDS])
+        # Same display unit as the medication's stock (e.g. "drops"), if it has one.
+        self._attr_native_unit_of_measurement = unit or None
         # Start at the dose's configured amount if it has one, else one unit.
         self._value = float(dose.get(CONF_DOSE_UNITS) or 0) or 1.0
         self._attr_name = f"{self._meds} amount ({self._time})"
