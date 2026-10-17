@@ -197,6 +197,21 @@ views:
                 {% endfor %}
             sort:
               method: name
+          # Adherence streak (opt-in): consecutive days every scheduled dose was
+          # taken; longest streak / last missed / 30-day adherence as attributes.
+          # Shows only when the streak option is on; hidden otherwise.
+          - type: custom:auto-entities
+            show_empty: false
+            card:
+              type: entities
+              title: Adherence streak
+            filter:
+              template: >
+                {% for s in states.sensor if s.attributes.adherence_percent is defined %}
+                {{ s.entity_id }}
+                {% endfor %}
+            sort:
+              method: name
       - type: grid
         cards:
           # 3b. As-needed (PRN) meds: tap "Log dose" to record one (decrements supply),
