@@ -23,6 +23,7 @@ from .const import (
     CONF_DAYS,
     CONF_DOSES,
     CONF_DOSE_UNITS,
+    CONF_EXTRA_TIMES,
     CONF_INTERVAL_DAYS,
     CONF_MAX_PER_DAY,
     CONF_MED_BRAND,
@@ -88,6 +89,7 @@ from .const import (
     SCHEDULE_PRN,
     dose_max_per_day,
     dose_min_interval_hours,
+    expand_dose_times,
     partial_skip_meds,
     split_medications,
 )
@@ -388,20 +390,30 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         days of the month. The fields for the other types are ignored on save.
         """
         if user_input is not None:
-            new_dose = self._dose_from_input(user_input)
-            if self._dose_key_exists(new_dose):
+            base = self._dose_from_input(user_input)
+            # One dose per time: the primary time plus any extra times entered.
+            times, invalid = expand_dose_times(
+                user_input.get(CONF_TIME), user_input.get(CONF_EXTRA_TIMES)
+            )
+            new_doses = [{**base, CONF_TIME: t} for t in times]
+            error = None
+            if invalid or not new_doses:
+                error = "invalid_time"
+            elif any(self._dose_key_exists(d) for d in new_doses):
+                error = "duplicate_dose"
+            if error:
                 return self.async_show_form(
                     step_id="add_dose",
-                    data_schema=self._dose_schema(user_input),
-                    errors={"base": "duplicate_dose"},
+                    data_schema=self._dose_schema(user_input, allow_multi=True),
+                    errors={"base": error},
                 )
             options = dict(self._entry.options)
             doses = list(options.get(CONF_DOSES, []))
-            doses.append(new_dose)
+            doses.extend(new_doses)
             options[CONF_DOSES] = doses
             return self.async_create_entry(title="", data=options)
         return self.async_show_form(
-            step_id="add_dose", data_schema=self._dose_schema({})
+            step_id="add_dose", data_schema=self._dose_schema({}, allow_multi=True)
         )
 
     def _dose_key_exists(
@@ -477,8 +489,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 dose[CONF_ANCHOR_DATE] = str(anchor)[:10]
         return dose
 
-    def _dose_schema(self, d: dict[str, Any]) -> vol.Schema:
-        """The add/edit dose form, pre-filled from dose d (empty d = defaults)."""
+    def _dose_schema(self, d: dict[str, Any], allow_multi: bool = False) -> vol.Schema:
+        """The add/edit dose form, pre-filled from dose d (empty d = defaults).
+
+        ``allow_multi`` (the add flow only) adds an optional "additional times"
+        field, so one trip through the form can create the same dose at several
+        times. Editing stays one time per dose."""
 
         def _val(key: str, fallback: Any) -> Any:
             v = d.get(key)
@@ -502,52 +518,64 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             if d.get(CONF_ANCHOR_DATE)
             else vol.Optional(CONF_ANCHOR_DATE)
         )
-        return vol.Schema(
-            {
-                time_marker: selector.TimeSelector(),
-                meds_marker: selector.TextSelector(),
-                vol.Required(
-                    CONF_SCHEDULE_TYPE,
-                    default=_val(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE),
-                ): _schedule_type_selector(),
-                vol.Required(
-                    CONF_DAYS, default=list(_val(CONF_DAYS, DEFAULT_DAYS))
-                ): _days_selector(),
-                vol.Optional(
-                    CONF_INTERVAL_DAYS,
-                    default=int(_val(CONF_INTERVAL_DAYS, DEFAULT_INTERVAL_DAYS)),
-                ): _interval_selector(),
-                vol.Optional(
-                    CONF_CYCLE_ON, default=int(_val(CONF_CYCLE_ON, DEFAULT_CYCLE_ON))
-                ): _cycle_selector(1),
-                vol.Optional(
-                    CONF_CYCLE_OFF, default=int(_val(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF))
-                ): _cycle_selector(0),
-                anchor_marker: selector.DateSelector(),
-                vol.Optional(
-                    CONF_MONTH_DAYS,
-                    default=[str(x) for x in _val(CONF_MONTH_DAYS, DEFAULT_MONTH_DAYS)],
-                ): _month_days_selector(),
-                vol.Optional(
-                    CONF_MIN_INTERVAL_HOURS,
-                    default=float(
-                        _val(CONF_MIN_INTERVAL_HOURS, DEFAULT_MIN_INTERVAL_HOURS)
-                    ),
-                ): _min_interval_selector(),
-                vol.Optional(
-                    CONF_MAX_PER_DAY,
-                    default=int(_val(CONF_MAX_PER_DAY, DEFAULT_MAX_PER_DAY)),
-                ): _max_per_day_selector(),
-                vol.Optional(
-                    CONF_DOSE_UNITS,
-                    default=float(_val(CONF_DOSE_UNITS, DEFAULT_DOSE_UNITS)),
-                ): _amount_selector(),
-                vol.Optional(
-                    CONF_ASK_UNITS,
-                    default=bool(_val(CONF_ASK_UNITS, DEFAULT_ASK_UNITS)),
-                ): selector.BooleanSelector(),
-            }
+        extra_marker = (
+            vol.Optional(CONF_EXTRA_TIMES, default=str(d[CONF_EXTRA_TIMES]))
+            if d.get(CONF_EXTRA_TIMES)
+            else vol.Optional(CONF_EXTRA_TIMES)
         )
+        schema: dict[Any, Any] = {
+            time_marker: selector.TimeSelector(),
+            meds_marker: selector.TextSelector(),
+            vol.Required(
+                CONF_SCHEDULE_TYPE,
+                default=_val(CONF_SCHEDULE_TYPE, DEFAULT_SCHEDULE_TYPE),
+            ): _schedule_type_selector(),
+            vol.Required(
+                CONF_DAYS, default=list(_val(CONF_DAYS, DEFAULT_DAYS))
+            ): _days_selector(),
+            vol.Optional(
+                CONF_INTERVAL_DAYS,
+                default=int(_val(CONF_INTERVAL_DAYS, DEFAULT_INTERVAL_DAYS)),
+            ): _interval_selector(),
+            vol.Optional(
+                CONF_CYCLE_ON, default=int(_val(CONF_CYCLE_ON, DEFAULT_CYCLE_ON))
+            ): _cycle_selector(1),
+            vol.Optional(
+                CONF_CYCLE_OFF, default=int(_val(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF))
+            ): _cycle_selector(0),
+            anchor_marker: selector.DateSelector(),
+            vol.Optional(
+                CONF_MONTH_DAYS,
+                default=[str(x) for x in _val(CONF_MONTH_DAYS, DEFAULT_MONTH_DAYS)],
+            ): _month_days_selector(),
+            vol.Optional(
+                CONF_MIN_INTERVAL_HOURS,
+                default=float(
+                    _val(CONF_MIN_INTERVAL_HOURS, DEFAULT_MIN_INTERVAL_HOURS)
+                ),
+            ): _min_interval_selector(),
+            vol.Optional(
+                CONF_MAX_PER_DAY,
+                default=int(_val(CONF_MAX_PER_DAY, DEFAULT_MAX_PER_DAY)),
+            ): _max_per_day_selector(),
+            vol.Optional(
+                CONF_DOSE_UNITS,
+                default=float(_val(CONF_DOSE_UNITS, DEFAULT_DOSE_UNITS)),
+            ): _amount_selector(),
+            vol.Optional(
+                CONF_ASK_UNITS,
+                default=bool(_val(CONF_ASK_UNITS, DEFAULT_ASK_UNITS)),
+            ): selector.BooleanSelector(),
+        }
+        if allow_multi:
+            # Add the additional-times field right after the time field.
+            ordered: dict[Any, Any] = {}
+            for key, val in schema.items():
+                ordered[key] = val
+                if key is time_marker:
+                    ordered[extra_marker] = selector.TextSelector()
+            schema = ordered
+        return vol.Schema(schema)
 
     async def async_step_remove_dose(
         self, user_input: dict[str, Any] | None = None

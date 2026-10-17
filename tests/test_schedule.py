@@ -266,6 +266,50 @@ def test_dpw_interval_every_seven():
     assert abs(doses_per_week({"schedule_type": "interval", "interval_days": 7}) - 1.0) < 1e-9
 
 
+# --- Multiple times per dose (normalize_time / expand_dose_times) ----------
+
+def test_normalize_time_variants():
+    nt = const.normalize_time
+    assert nt("8:00") == "08:00"
+    assert nt("08:00") == "08:00"
+    assert nt("08:00:00") == "08:00"  # seconds dropped
+    assert nt("20.30") == "20:30"  # '.' separator
+    assert nt(" 9:5 ") == "09:05"
+    assert nt("24:00") is None
+    assert nt("08:60") is None
+    assert nt("notatime") is None
+    assert nt("8") is None
+    assert nt("") is None
+
+
+def test_expand_dose_times_basic():
+    assert const.expand_dose_times("08:00", "20:00") == (["08:00", "20:00"], [])
+
+
+def test_expand_dose_times_separators_and_dedupe():
+    # Comma / semicolon / whitespace separators, and duplicates (incl. the
+    # primary) dropped, order preserved.
+    times, invalid = const.expand_dose_times("08:00", "8:00, 14:00; 20:00 14:00")
+    assert times == ["08:00", "14:00", "20:00"]
+    assert invalid == []
+
+
+def test_expand_dose_times_reports_invalid():
+    times, invalid = const.expand_dose_times("08:00", "14:00, nope, 25:00")
+    assert times == ["08:00", "14:00"]
+    assert invalid == ["nope", "25:00"]
+
+
+def test_expand_dose_times_blank_extra():
+    assert const.expand_dose_times("08:00", "") == (["08:00"], [])
+    assert const.expand_dose_times("08:00", None) == (["08:00"], [])
+
+
+def test_expand_dose_times_strips_seconds():
+    # TimeSelector provides HH:MM:SS; everything is normalised to HH:MM.
+    assert const.expand_dose_times("08:00:00", "20:00:00") == (["08:00", "20:00"], [])
+
+
 # --- Medication matching (supply decrement, refill, repairs) ----------------
 
 def test_split_medications_separators():

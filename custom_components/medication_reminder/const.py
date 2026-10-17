@@ -27,6 +27,9 @@ CONF_PATIENT = "patient"
 CONF_PATIENT_TYPE = "patient_type"
 CONF_DOSES = "doses"
 CONF_TIME = "time"
+# Add-dose form only: optional extra times to create the same dose at, in one go
+# (not stored on a dose; each time becomes its own dose).
+CONF_EXTRA_TIMES = "additional_times"
 CONF_MEDS = "meds"
 CONF_DAYS = "days"
 CONF_NOTIFY = "notify"
@@ -211,6 +214,50 @@ def normalize_skipped(value):
 def med_skipped(skipped, med_name):
     """True if `med_name` is in a dose's skipped-medications list."""
     return any(meds_contains(entry, med_name) for entry in normalize_skipped(skipped))
+
+
+def normalize_time(value):
+    """Parse a time to 'HH:MM' (24-hour), or None if it is not a valid time.
+
+    Accepts 'HH:MM', 'H:MM', 'HH:MM:SS' (seconds dropped), and '.' as the
+    hour/minute separator. Used to clean a user-entered time.
+    """
+    parts = re.split(r"[:.]", str(value).strip())
+    if len(parts) not in (2, 3):
+        return None
+    try:
+        hour, minute = int(parts[0]), int(parts[1])
+    except (ValueError, TypeError):
+        return None
+    if 0 <= hour <= 23 and 0 <= minute <= 59:
+        return f"{hour:02d}:{minute:02d}"
+    return None
+
+
+def expand_dose_times(primary, extra):
+    """The ordered, unique 'HH:MM' times for a dose from its primary time and an
+    optional free-text "additional times" string, plus any tokens that were not
+    valid times.
+
+    `extra` tokens are separated by comma, semicolon, or whitespace, each parsed
+    by normalize_time. The primary time comes first; duplicates are dropped.
+    Returns (times, invalid), where invalid lists the unparseable tokens so the
+    form can report them. An unparseable primary yields no times.
+    """
+    times: list[str] = []
+    invalid: list[str] = []
+    primary_norm = normalize_time(primary)
+    if primary_norm is not None:
+        times.append(primary_norm)
+    for token in re.split(r"[,;\s]+", str(extra or "").strip()):
+        if not token:
+            continue
+        norm = normalize_time(token)
+        if norm is None:
+            invalid.append(token)
+        elif norm not in times:
+            times.append(norm)
+    return times, invalid
 
 
 def _parse_iso_date(value):

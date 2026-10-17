@@ -5,6 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Add a medication at several times in one go. The Add a dose form has a new optional **Additional times** field: enter extra 24-hour times (comma, semicolon, or space separated, e.g. `14:00, 20:00`) and one dose is created per time, all sharing the same medications, schedule, and options, so a twice or three-times-daily med no longer means filling in the whole form again for each time. Leave it blank for a single time. Invalid entries are reported before anything is saved, and the usual duplicate check is applied to each time. Editing is unchanged (one time per dose, since each time is its own dose with its own state). (Requested by a community member on the Home Assistant forum, tracked in #44.)
+
 ## [0.43.0] - 2026-10-13
 ### Added
 - Strict reminders. A new **Strict reminders** input on the reminder blueprint (off by default) hides the Remind me later and Skip today buttons from the reminder and missed-dose notifications, leaving only Mark given, so a reminder can only be cleared by actually marking the dose given. For people who rely on the nag and do not want an easy dismiss. The snooze and skip services still work from the dashboard and automations; this only changes the notification buttons, and it is per automation, so one patient can run strict while another does not. Default is unchanged (all three buttons). **Re-import the reminder blueprint** (or set `strict_reminders` in the companion automations) to use it. (Requested by a community member on the Home Assistant forum, tracked in #43.)
