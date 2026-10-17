@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.45.0] - 2026-10-17
 ### Added
 - Adherence streak. A new opt-in **Adherence streak** setting (Reminder settings, off by default) adds a `sensor.<patient>_adherence_streak` whose value is the number of consecutive completed days on which every scheduled dose was taken. It also reports `longest_streak`, `last_missed`, and an `adherence_percent` over the last 30 days. A skipped dose (skip today) keeps the streak but counts against the percentage; a missed dose breaks it; a day with no doses due is neutral; and a gap (Home Assistant was off) ends the current streak. Because the integration otherwise forgets each day at the reset, the sensor keeps a small persisted per-day history (last 120 days): at the daily reset the day that just ended is scored from the doses given or skipped during it. As-needed (PRN) doses are not counted. The bundled dashboards show an "Adherence streak" card (hidden unless the option is on). Turning the option off removes the sensor but keeps the history, so re-enabling resumes where it left off. (Requested on the tracker, #39.)
 
