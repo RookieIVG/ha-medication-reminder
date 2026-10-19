@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.46.0] - 2026-10-18
 ### Added
 - End date for a dose. The Add and Edit dose form has a new optional **End date** field: set it and the medication stops reminding after that date, for a course with a set length (e.g. 7 days or 3 months). It is honoured by `is_due` for every schedule type (daily, specific weekdays, every N days, cycle, monthly), so the dose simply drops off once the course is over. Leave it blank to continue indefinitely, as before. An end date before the start date is rejected with a clear error rather than silently never firing. Complements the start date added in 0.42.0. (Requested by a community member on the Home Assistant forum, tracked in #50.)
 
