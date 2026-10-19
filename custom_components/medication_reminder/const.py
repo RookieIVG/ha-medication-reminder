@@ -50,6 +50,7 @@ CONF_STREAK = "streak"  # opt-in per-patient adherence streak sensor
 CONF_SCHEDULE_TYPE = "schedule_type"
 CONF_INTERVAL_DAYS = "interval_days"
 CONF_ANCHOR_DATE = "anchor_date"
+CONF_END_DATE = "end_date"  # optional stop date: no reminders after it
 CONF_CYCLE_ON = "cycle_on"
 CONF_CYCLE_OFF = "cycle_off"
 CONF_MONTH_DAYS = "month_days"
@@ -452,6 +453,11 @@ def is_due(data, on_date):
     # For interval and cycle the anchor is also the cadence origin (used below).
     anchor = _parse_iso_date(data.get(CONF_ANCHOR_DATE))
     if anchor is not None and on_date < anchor:
+        return False
+    # End date: a universal "not after" guard, so a dose with an end date stops
+    # reminding once the course is over.
+    end = _parse_iso_date(data.get(CONF_END_DATE))
+    if end is not None and on_date > end:
         return False
     if stype == SCHEDULE_INTERVAL:
         n = _interval_n(data)

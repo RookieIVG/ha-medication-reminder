@@ -23,6 +23,7 @@ from .const import (
     CONF_DAYS,
     CONF_DOSES,
     CONF_DOSE_UNITS,
+    CONF_END_DATE,
     CONF_EXTRA_TIMES,
     CONF_INTERVAL_DAYS,
     CONF_MAX_PER_DAY,
@@ -414,6 +415,8 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             error = None
             if invalid or not new_doses:
                 error = "invalid_time"
+            elif self._end_before_start(user_input):
+                error = "end_before_start"
             elif any(self._dose_key_exists(d) for d in new_doses):
                 error = "duplicate_dose"
             if error:
@@ -502,7 +505,20 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             anchor = user_input.get(CONF_ANCHOR_DATE)
             if anchor:
                 dose[CONF_ANCHOR_DATE] = str(anchor)[:10]
+        # Optional end date: a universal "no reminders after this date", stored for
+        # any scheduled type when given (PRN has no schedule to end).
+        if stype != SCHEDULE_PRN:
+            end = user_input.get(CONF_END_DATE)
+            if end:
+                dose[CONF_END_DATE] = str(end)[:10]
         return dose
+
+    @staticmethod
+    def _end_before_start(user_input: dict[str, Any]) -> bool:
+        """True if an end date is set and falls before the start date."""
+        anchor = user_input.get(CONF_ANCHOR_DATE)
+        end = user_input.get(CONF_END_DATE)
+        return bool(anchor and end and str(end)[:10] < str(anchor)[:10])
 
     def _dose_schema(self, d: dict[str, Any], allow_multi: bool = False) -> vol.Schema:
         """The add/edit dose form, pre-filled from dose d (empty d = defaults).
@@ -533,6 +549,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
             if d.get(CONF_ANCHOR_DATE)
             else vol.Optional(CONF_ANCHOR_DATE)
         )
+        # Optional end date: pre-filled only when set; blank leaves no end.
+        end_marker = (
+            vol.Optional(CONF_END_DATE, default=str(d[CONF_END_DATE])[:10])
+            if d.get(CONF_END_DATE)
+            else vol.Optional(CONF_END_DATE)
+        )
         extra_marker = (
             vol.Optional(CONF_EXTRA_TIMES, default=str(d[CONF_EXTRA_TIMES]))
             if d.get(CONF_EXTRA_TIMES)
@@ -559,6 +581,7 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
                 CONF_CYCLE_OFF, default=int(_val(CONF_CYCLE_OFF, DEFAULT_CYCLE_OFF))
             ): _cycle_selector(0),
             anchor_marker: selector.DateSelector(),
+            end_marker: selector.DateSelector(),
             vol.Optional(
                 CONF_MONTH_DAYS,
                 default=[str(x) for x in _val(CONF_MONTH_DAYS, DEFAULT_MONTH_DAYS)],
@@ -657,6 +680,12 @@ class MedicationReminderOptionsFlow(config_entries.OptionsFlow):
         current = doses[idx]
         if user_input is not None:
             new_dose = self._dose_from_input(user_input)
+            if self._end_before_start(user_input):
+                return self.async_show_form(
+                    step_id="edit_dose_details",
+                    data_schema=self._dose_schema(user_input),
+                    errors={"base": "end_before_start"},
+                )
             if self._dose_key_exists(new_dose, skip_index=idx):
                 return self.async_show_form(
                     step_id="edit_dose_details",

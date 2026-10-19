@@ -248,6 +248,41 @@ def test_anchor_blank_or_bad_is_no_constraint():
     assert is_due({"days": [wd], "anchor_date": "not-a-date"}, MON) is True
 
 
+# --- End date (stop after) applies to any schedule type --------------------
+
+def test_weekday_not_due_after_end_date():
+    d = {"days": WEEKDAYS, "end_date": "2026-06-05"}
+    assert is_due(d, date(2026, 6, 4)) is True  # before the end
+    assert is_due(d, date(2026, 6, 5)) is True  # on the end date (inclusive)
+    assert is_due(d, date(2026, 6, 6)) is False  # after the end
+
+
+def test_start_and_end_window():
+    d = {"days": WEEKDAYS, "anchor_date": "2026-06-03", "end_date": "2026-06-05"}
+    assert is_due(d, date(2026, 6, 2)) is False  # before start
+    assert is_due(d, date(2026, 6, 3)) is True
+    assert is_due(d, date(2026, 6, 5)) is True
+    assert is_due(d, date(2026, 6, 6)) is False  # after end
+
+
+def test_interval_respects_end_date():
+    d = {
+        "schedule_type": "interval",
+        "interval_days": 2,
+        "anchor_date": "2026-06-01",
+        "end_date": "2026-06-03",
+    }
+    assert is_due(d, date(2026, 6, 1)) is True  # anchor, in window
+    assert is_due(d, date(2026, 6, 3)) is True  # offset 2, on the end date
+    assert is_due(d, date(2026, 6, 5)) is False  # due by cadence but after end
+
+
+def test_end_date_blank_or_bad_is_no_constraint():
+    wd = WEEKDAYS[MON.weekday()]
+    assert is_due({"days": [wd], "end_date": ""}, MON) is True
+    assert is_due({"days": [wd], "end_date": "not-a-date"}, MON) is True
+
+
 # --- doses_per_week (run-out estimate cadence) -----------------------------
 
 def test_dpw_weekdays_is_len_days():

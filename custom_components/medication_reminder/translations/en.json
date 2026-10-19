@@ -31,7 +31,8 @@
     "error": {
       "duplicate_dose": "A dose with this time and these medications already exists. Use a different time, or combine them into one dose.",
       "supply_exists": "This medication already has a tracked supply. Use Edit a supply to change it.",
-      "invalid_time": "One of the additional times is not a valid time. Use 24-hour HH:MM, separated by commas, e.g. 14:00, 20:00."
+      "invalid_time": "One of the additional times is not a valid time. Use 24-hour HH:MM, separated by commas, e.g. 14:00, 20:00.",
+      "end_before_start": "The end date is before the start date. Pick an end date on or after the start date, or clear one of them."
     },
     "step": {
       "init": {
@@ -83,7 +84,8 @@
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
           "dose_units": "Units consumed (this dose)",
           "ask_units": "Ask for amount when marking",
-          "additional_times": "Additional times (optional)"
+          "additional_times": "Additional times (optional)",
+          "end_date": "End date (optional; no reminders after it)"
         },
         "data_description": {
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
@@ -91,7 +93,8 @@
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
           "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
           "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount.",
-          "additional_times": "Create the same dose at more than one time in one go, e.g. a twice-daily med. Enter extra 24-hour times separated by commas (14:00, 20:00); each becomes its own dose with the same medication, schedule, and options. Leave blank for a single time."
+          "additional_times": "Create the same dose at more than one time in one go, e.g. a twice-daily med. Enter extra 24-hour times separated by commas (14:00, 20:00); each becomes its own dose with the same medication, schedule, and options. Leave blank for a single time.",
+          "end_date": "Optional. Stop reminding for this medication after this date, for a course with a set length (e.g. 7 days or 3 months). Leave blank to continue indefinitely."
         }
       },
       "edit_dose": {
@@ -115,14 +118,16 @@
           "min_interval_hours": "Minimum hours between doses (as-needed only; 0 = no limit)",
           "max_per_day": "Max doses per day (as-needed only; 0 = no limit)",
           "dose_units": "Units consumed (this dose)",
-          "ask_units": "Ask for amount when marking"
+          "ask_units": "Ask for amount when marking",
+          "end_date": "End date (optional; no reminders after it)"
         },
         "data_description": {
           "meds": "Separate multiple medications with &, +, or a comma. A slash only splits with spaces around it, so a name like 'Carbimazol 5mg (1/2)' stays whole.",
           "min_interval_hours": "For an as-needed medication, warn (never block) when it is logged again sooner than this many hours, e.g. a pain med no less than 4 hours apart.",
           "max_per_day": "For an as-needed medication, warn once this many doses have been logged today.",
           "dose_units": "Overrides the medication's default units per dose, for this dose only. Leave 0 to use the default; use decimals like 0.5 for half a pill.",
-          "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount."
+          "ask_units": "Turn on for a medication whose dose varies (e.g. adjusted from a reading). It adds an amount field you set before marking the dose given, and the supply decrements by that amount instead of the configured one. Off = always use the configured amount.",
+          "end_date": "Optional. Stop reminding for this medication after this date, for a course with a set length (e.g. 7 days or 3 months). Leave blank to continue indefinitely."
         }
       },
       "remove_dose": {
