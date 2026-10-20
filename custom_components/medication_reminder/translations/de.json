@@ -1,36 +1,38 @@
 {
   "issues": {
     "supply_no_matching_dose": {
-      "title": "Verfolgter Vorrat hat keine passende Dosis",
-      "description": "Der Vorrat \"{medication}\" für {patient} stimmt mit keinem Medikament in einer Dosis überein und wird daher nie reduziert. Überprüfe die Schreibweise in den Einstellungen (sie muss exakt mit einem Medikament in einer Dosis übereinstimmen) oder entferne den Vorrat."
+      "title": "Erfasster Vorrat hat keine passende Dosis",
+      "description": "Der Vorrat „{medication}“ für {patient} passt zu keinem Medikament in einer Dosis und wird daher nie heruntergezählt. Prüfe die Schreibweise unter „Konfigurieren“ (sie muss exakt mit dem Medikament einer Dosis übereinstimmen) oder entferne den Vorrat."
     }
   },
   "config": {
     "step": {
       "user": {
         "title": "Patient hinzufügen",
-        "description": "Erstelle einen Medikamentenplan für ein Haustier oder eine Person. Wähle den Patiententyp (für das Symbol) und wer erinnert werden soll. Danach kannst du die Dosen hinzufügen.",
+        "description": "Erstelle einen Medikationsplan für ein Haustier oder eine Person. Wähle den Patiententyp (für das Symbol) und wer erinnert werden soll; die Dosen kannst du im nächsten Schritt hinzufügen.",
         "data": {
-          "patient": "Patientenname",
+          "patient": "Name des Patienten",
           "patient_type": "Patiententyp",
           "notify": "Benachrichtigungsziel (Person oder Gruppe)"
         }
       }
     },
     "abort": {
-      "already_configured": "Ein Patient mit diesem Namen ist bereits konfiguriert."
+      "already_configured": "Ein Patient mit diesem Namen ist bereits eingerichtet."
     }
   },
   "options": {
     "abort": {
       "no_doses": "Füge zuerst eine Dosis hinzu. Es gibt noch keine Dosen zum Bearbeiten.",
-      "no_medications": "Füge zuerst eine Dosis hinzu. Medikamentendetails werden an ein Medikament angehängt, das bereits in einer der Dosen des Patienten verwendet wird.",
-      "no_medication_detail": "Füge zuerst Medikamentendetails hinzu. Es gibt noch nichts zum Bearbeiten.",
-      "no_supplies": "Verfolge zuerst einen Vorrat. Es gibt noch nichts zum Bearbeiten."
+      "no_medications": "Füge zuerst eine Dosis hinzu. Medikamentendetails werden einem Medikament zugeordnet, das bereits in einer Dosis dieses Patienten verwendet wird.",
+      "no_medication_detail": "Füge zuerst Medikamentendetails hinzu. Es gibt noch nichts zu bearbeiten.",
+      "no_supplies": "Erfasse zuerst einen Vorrat. Es gibt noch nichts zu bearbeiten."
     },
     "error": {
-      "duplicate_dose": "Eine Dosis mit dieser Uhrzeit und diesen Medikamenten existiert bereits. Verwende eine andere Uhrzeit oder kombiniere sie zu einer Dosis.",
-      "supply_exists": "Dieses Medikament hat bereits einen verfolgten Vorrat. Verwende \"Vorrat bearbeiten\", um ihn zu ändern."
+      "duplicate_dose": "Eine Dosis mit dieser Uhrzeit und diesen Medikamenten existiert bereits. Wähle eine andere Uhrzeit oder fasse sie zu einer Dosis zusammen.",
+      "supply_exists": "Für dieses Medikament wird bereits ein Vorrat erfasst. Verwende „Vorrat bearbeiten“, um ihn zu ändern.",
+      "invalid_time": "Eine der zusätzlichen Uhrzeiten ist ungültig. Verwende das 24-Stunden-Format HH:MM, durch Kommas getrennt, z. B. 14:00, 20:00.",
+      "end_before_start": "Das Enddatum liegt vor dem Startdatum. Wähle ein Enddatum am oder nach dem Startdatum oder leere eines der beiden Felder."
     },
     "step": {
       "init": {
@@ -53,7 +55,7 @@
       "supplies": {
         "title": "Vorräte",
         "menu_options": {
-          "add_supply": "Vorrat verfolgen",
+          "add_supply": "Vorrat erfassen",
           "edit_supply": "Vorrat bearbeiten",
           "remove_supply": "Vorrat entfernen"
         }
@@ -68,25 +70,31 @@
       },
       "add_dose": {
         "title": "Dosis hinzufügen",
-        "description": "Wähle die Uhrzeit und liste die Medikamente auf. Dann wähle, wie oft sie wiederholt werden sollen: an bestimmten Wochentagen (alle Tage = täglich), alle N Tage oder ein Ein-/Ausschalt-Zyklus ab einem Startdatum.",
+        "description": "Wähle die Uhrzeit und gib die Medikamente an. Lege dann fest, wie sich die Dosis wiederholt: an ausgewählten Wochentagen (alle Tage = täglich), alle N Tage oder in einem Ein/Aus-Zyklus, ab einem Startdatum.",
         "data": {
           "time": "Uhrzeit",
           "meds": "Medikamente",
           "schedule_type": "Wiederholung",
           "days": "Wochentage (für die wöchentliche Option)",
           "interval_days": "Alle N Tage (für die Intervall-Option)",
-          "cycle_on": "Tage an (für den Ein-/Ausschalt-Zyklus)",
-          "cycle_off": "Tage aus (für den Ein-/Ausschalt-Zyklus)",
-          "anchor_date": "Startdatum (für die Intervall- oder Zyklus-Option)",
-          "min_interval_hours": "Mindeststunden zwischen den Dosen (nur bei Bedarf; 0 = keine Begrenzung)",
-          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)",
-          "dose_units": "Verbrauchte Einheiten (diese Dosis)"
+          "cycle_on": "Tage aktiv (für den Ein/Aus-Zyklus)",
+          "cycle_off": "Tage Pause (für den Ein/Aus-Zyklus)",
+          "anchor_date": "Startdatum (optional; keine Erinnerungen vor diesem Datum)",
+          "min_interval_hours": "Mindeststunden zwischen Dosen (nur bei Bedarf; 0 = keine Grenze)",
+          "max_per_day": "Max. Dosen pro Tag (nur bei Bedarf; 0 = keine Grenze)",
+          "dose_units": "Verbrauchte Einheiten (diese Dosis)",
+          "ask_units": "Beim Markieren nach Menge fragen",
+          "additional_times": "Zusätzliche Uhrzeiten (optional)",
+          "end_date": "Enddatum (optional; keine Erinnerungen danach)"
         },
         "data_description": {
-          "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich teilt nur mit Leerzeichen drumherum, sodass ein Name wie 'Carbimazol 5mg (1/2)' ganz bleibt.",
-          "min_interval_hours": "Bei einem Medikament nach Bedarf wird gewarnt (nie blockiert), wenn es erneut innerhalb dieser Stunden protokolliert wird, z. B. ein Schmerzmittel nicht öfter als alle 4 Stunden.",
-          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde.",
-          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lasse 0, um den Standardwert zu verwenden; verwende Dezimalzahlen wie 0.5 für eine halbe Tablette."
+          "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich trennt nur, wenn Leerzeichen davor und danach stehen, sodass ein Name wie „Carbimazol 5mg (1/2)“ erhalten bleibt.",
+          "min_interval_hours": "Bei einem Bedarfsmedikament wird gewarnt (nie blockiert), wenn es früher als nach dieser Anzahl Stunden erneut erfasst wird, z. B. ein Schmerzmittel mit mindestens 4 Stunden Abstand.",
+          "max_per_day": "Bei einem Bedarfsmedikament wird gewarnt, sobald heute so viele Dosen erfasst wurden.",
+          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lass 0 stehen, um den Standardwert zu verwenden; nutze Dezimalwerte wie 0,5 für eine halbe Tablette.",
+          "ask_units": "Aktiviere dies für ein Medikament mit wechselnder Dosis (z. B. nach einem Messwert angepasst). Es wird ein Mengenfeld hinzugefügt, das du vor dem Markieren der Dosis als gegeben einstellst, und der Vorrat wird um diese Menge statt um die konfigurierte verringert. Aus = immer die konfigurierte Menge verwenden.",
+          "additional_times": "Lege dieselbe Dosis in einem Schritt zu mehreren Uhrzeiten an, z. B. für ein Medikament zweimal täglich. Gib weitere Uhrzeiten im 24-Stunden-Format durch Kommas getrennt ein (14:00, 20:00); jede wird zu einer eigenen Dosis mit demselben Medikament, Zeitplan und denselben Optionen. Leer lassen für eine einzelne Uhrzeit.",
+          "end_date": "Optional. Erinnerungen für dieses Medikament enden nach diesem Datum, für eine Behandlung mit fester Dauer (z. B. 7 Tage oder 3 Monate). Leer lassen, um unbegrenzt fortzufahren."
         }
       },
       "edit_dose": {
@@ -97,25 +105,29 @@
       },
       "edit_dose_details": {
         "title": "Dosis bearbeiten",
-        "description": "Ändere diese Dosis und speichere sie, um sie zu ersetzen. Wenn nur der Zeitplan bearbeitet wird, bleibt dieselbe Entität erhalten; bei Änderung der Uhrzeit oder der Medikamente wird eine neue Entität erstellt (der Verlauf wird zurückgesetzt).",
+        "description": "Ändere diese Dosis und speichere, um sie zu ersetzen. Wird nur der Zeitplan geändert, bleibt dieselbe Entität erhalten; eine Änderung von Uhrzeit oder Medikamenten erzeugt eine neue Entität (ihr Verlauf wird zurückgesetzt).",
         "data": {
           "time": "Uhrzeit",
           "meds": "Medikamente",
           "schedule_type": "Wiederholung",
           "days": "Wochentage (für die wöchentliche Option)",
           "interval_days": "Alle N Tage (für die Intervall-Option)",
-          "cycle_on": "Tage an (für den Ein-/Ausschalt-Zyklus)",
-          "cycle_off": "Tage aus (für den Ein-/Ausschalt-Zyklus)",
-          "anchor_date": "Startdatum (für die Intervall- oder Zyklus-Option)",
-          "min_interval_hours": "Mindeststunden zwischen den Dosen (nur bei Bedarf; 0 = keine Begrenzung)",
-          "max_per_day": "Maximale Dosen pro Tag (nur bei Bedarf; 0 = keine Begrenzung)",
-          "dose_units": "Verbrauchte Einheiten (diese Dosis)"
+          "cycle_on": "Tage aktiv (für den Ein/Aus-Zyklus)",
+          "cycle_off": "Tage Pause (für den Ein/Aus-Zyklus)",
+          "anchor_date": "Startdatum (optional; keine Erinnerungen vor diesem Datum)",
+          "min_interval_hours": "Mindeststunden zwischen Dosen (nur bei Bedarf; 0 = keine Grenze)",
+          "max_per_day": "Max. Dosen pro Tag (nur bei Bedarf; 0 = keine Grenze)",
+          "dose_units": "Verbrauchte Einheiten (diese Dosis)",
+          "ask_units": "Beim Markieren nach Menge fragen",
+          "end_date": "Enddatum (optional; keine Erinnerungen danach)"
         },
         "data_description": {
-          "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich teilt nur mit Leerzeichen drumherum, sodass ein Name wie 'Carbimazol 5mg (1/2)' ganz bleibt.",
-          "min_interval_hours": "Bei einem Medikament nach Bedarf wird gewarnt (nie blockiert), wenn es erneut innerhalb dieser Stunden protokolliert wird, z. B. ein Schmerzmittel nicht öfter als alle 4 Stunden.",
-          "max_per_day": "Bei einem Medikament nach Bedarf wird einmal gewarnt, wenn diese Anzahl an Dosen heute bereits protokolliert wurde.",
-          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lasse 0, um den Standardwert zu verwenden; verwende Dezimalzahlen wie 0.5 für eine halbe Tablette."
+          "meds": "Trenne mehrere Medikamente mit &, + oder einem Komma. Ein Schrägstrich trennt nur, wenn Leerzeichen davor und danach stehen, sodass ein Name wie „Carbimazol 5mg (1/2)“ erhalten bleibt.",
+          "min_interval_hours": "Bei einem Bedarfsmedikament wird gewarnt (nie blockiert), wenn es früher als nach dieser Anzahl Stunden erneut erfasst wird, z. B. ein Schmerzmittel mit mindestens 4 Stunden Abstand.",
+          "max_per_day": "Bei einem Bedarfsmedikament wird gewarnt, sobald heute so viele Dosen erfasst wurden.",
+          "dose_units": "Überschreibt die Standard-Einheiten pro Dosis des Medikaments, nur für diese Dosis. Lass 0 stehen, um den Standardwert zu verwenden; nutze Dezimalwerte wie 0,5 für eine halbe Tablette.",
+          "ask_units": "Aktiviere dies für ein Medikament mit wechselnder Dosis (z. B. nach einem Messwert angepasst). Es wird ein Mengenfeld hinzugefügt, das du vor dem Markieren der Dosis als gegeben einstellst, und der Vorrat wird um diese Menge statt um die konfigurierte verringert. Aus = immer die konfigurierte Menge verwenden.",
+          "end_date": "Optional. Erinnerungen für dieses Medikament enden nach diesem Datum, für eine Behandlung mit fester Dauer (z. B. 7 Tage oder 3 Monate). Leer lassen, um unbegrenzt fortzufahren."
         }
       },
       "remove_dose": {
@@ -125,20 +137,24 @@
         }
       },
       "add_supply": {
-        "title": "Medikamentenvorrat verfolgen",
-        "description": "Zähle, wie viel von einem Medikament vorhanden ist. Es wird jedes Mal reduziert, wenn eine Dosis mit diesem Medikament als gegeben markiert wird, zeigt bei deinem Schwellenwert einen niedrigen Bestand an und schätzt das Aufbrauchsdatum basierend auf dem Zeitplan. Wähle das Medikament aus deinen Dosen.",
+        "title": "Medikamentenvorrat erfassen",
+        "description": "Erfasse, wie viel von einem Medikament vorrätig ist. Der Vorrat verringert sich jedes Mal, wenn eine Dosis mit diesem Medikament als gegeben markiert wird, wird bei deinem Schwellenwert als niedrig gekennzeichnet und schätzt anhand des Zeitplans ein Datum, an dem er aufgebraucht ist. Wähle das Medikament aus deinen Dosen.",
         "data": {
-          "supply_med": "Medikamentenname",
-          "supply_units": "Vorhandene Einheiten",
-          "supply_per_dose": "Einheiten pro Dosis",
-          "supply_threshold": "Niedrig-Bestand-Schwellenwert",
-          "supply_refill_to": "Nachfüllmenge (ein voller Vorrat)",
-          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)",
-          "supply_cost": "Kosten pro Einheit (0 = nicht verfolgen)"
+          "supply_med": "Name des Medikaments",
+          "supply_units": "Aktuell vorrätige Einheiten",
+          "supply_per_dose": "Verbrauchte Einheiten pro Dosis",
+          "supply_threshold": "Schwellenwert für niedrigen Bestand",
+          "supply_refill_to": "Nachfüllmenge (voller Vorrat)",
+          "supply_refill_add": "Beim Nachfüllen addieren (Packungsnachfüllung)",
+          "supply_cost": "Kosten pro Einheit (0 = nicht erfassen)",
+          "supply_refills": "Verbleibende Folgeverordnungen auf dem Rezept (0 = nicht erfassen)",
+          "supply_unit": "Einheit / Darreichungsform (optional)"
         },
         "data_description": {
-          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen.",
-          "supply_cost": "Kosten einer Einheit (Tablette, ml usw.) in deiner Währung, verwendet für die Attribute Bestandswert und Kosten pro Dosis. Lasse 0, um die Kostenverfolgung zu überspringen."
+          "supply_refill_add": "Beim Nachfüllen wird die Nachfüllmenge zum Restbestand addiert (z. B. 17 + 30 = 47), statt den Bestand auf die Nachfüllmenge zu setzen.",
+          "supply_cost": "Kosten einer Einheit (eine Tablette, ein ml usw.) in deiner Währung, verwendet für die Attribute „Wert des Bestands“ und „Kosten pro Dosis“. Lass 0 stehen, um keine Kosten zu erfassen.",
+          "supply_refills": "Wie viele Folgeverordnungen das Rezept noch erlaubt. Bei jedem Druck auf die Nachfüll-Schaltfläche verringert sich dieser Wert um eins, und der Vorrat wird als niedrig gekennzeichnet, sobald er null erreicht, damit du weißt, dass du nachbestellen musst. Lass 0 stehen, um dies nicht zu erfassen.",
+          "supply_unit": "Die Einheit, in der dieses Medikament gezählt wird (Tabletten, Tropfen, ml, Spritzen, Pens, ...). Wähle eine aus oder gib eine eigene ein. Sie wird neben dem Bestand und der Dosismenge angezeigt, z. B. „30 Tabletten“. Leer lassen für eine reine Zahl."
         }
       },
       "edit_supply": {
@@ -149,36 +165,40 @@
       },
       "edit_supply_details": {
         "title": "Vorrat für {medication} bearbeiten",
-        "description": "Aktualisiere den verfolgten Vorrat für {medication}.",
+        "description": "Aktualisiere den erfassten Vorrat für {medication}.",
         "data": {
-          "supply_units": "Vorhandene Einheiten",
-          "supply_per_dose": "Einheiten pro Dosis",
-          "supply_threshold": "Niedrig-Bestand-Schwellenwert",
-          "supply_refill_to": "Nachfüllmenge (ein voller Vorrat)",
-          "supply_refill_add": "Beim Nachfüllen hinzufügen (Packungsnachfüllung)",
-          "supply_cost": "Kosten pro Einheit (0 = nicht verfolgen)"
+          "supply_units": "Aktuell vorrätige Einheiten",
+          "supply_per_dose": "Verbrauchte Einheiten pro Dosis",
+          "supply_threshold": "Schwellenwert für niedrigen Bestand",
+          "supply_refill_to": "Nachfüllmenge (voller Vorrat)",
+          "supply_refill_add": "Beim Nachfüllen addieren (Packungsnachfüllung)",
+          "supply_cost": "Kosten pro Einheit (0 = nicht erfassen)",
+          "supply_refills": "Verbleibende Folgeverordnungen auf dem Rezept (0 = nicht erfassen)",
+          "supply_unit": "Einheit / Darreichungsform (optional)"
         },
         "data_description": {
-          "supply_refill_add": "Addiere beim Nachfüllen die Nachfüllmenge zum Restbestand (z. B. 17 + 30 = 47), anstatt den Bestand auf die Nachfüllmenge zu setzen.",
-          "supply_cost": "Kosten einer Einheit (Tablette, ml usw.) in deiner Währung, verwendet für die Attribute Bestandswert und Kosten pro Dosis. Lasse 0, um die Kostenverfolgung zu überspringen."
+          "supply_refill_add": "Beim Nachfüllen wird die Nachfüllmenge zum Restbestand addiert (z. B. 17 + 30 = 47), statt den Bestand auf die Nachfüllmenge zu setzen.",
+          "supply_cost": "Kosten einer Einheit (eine Tablette, ein ml usw.) in deiner Währung, verwendet für die Attribute „Wert des Bestands“ und „Kosten pro Dosis“. Lass 0 stehen, um keine Kosten zu erfassen.",
+          "supply_refills": "Wie viele Folgeverordnungen das Rezept noch erlaubt. Bei jedem Druck auf die Nachfüll-Schaltfläche verringert sich dieser Wert um eins, und der Vorrat wird als niedrig gekennzeichnet, sobald er null erreicht, damit du weißt, dass du nachbestellen musst. Lass 0 stehen, um dies nicht zu erfassen.",
+          "supply_unit": "Die Einheit, in der dieses Medikament gezählt wird (Tabletten, Tropfen, ml, Spritzen, Pens, ...). Wähle eine aus oder gib eine eigene ein. Sie wird neben dem Bestand und der Dosismenge angezeigt, z. B. „30 Tabletten“. Leer lassen für eine reine Zahl."
         }
       },
       "remove_supply": {
-        "title": "Verfolgte Vorräte entfernen",
+        "title": "Erfasste Vorräte entfernen",
         "data": {
-          "remove": "Vorräte, deren Verfolgung beendet werden soll"
+          "remove": "Vorräte, die nicht mehr erfasst werden sollen"
         }
       },
       "medication_detail": {
         "title": "Medikamentendetails",
-        "description": "Optionale Referenzinformationen für ein Medikament, getrennt vom kurzen Dosennamen. Wähle ein Medikament aus den Dosen dieses Patienten; das Speichern von Details für ein Medikament, das bereits welche hat, aktualisiert sie.",
+        "description": "Optionale Referenzinformationen zu einem Medikament, getrennt vom kurzen Dosisnamen. Wähle ein Medikament aus den Dosen dieses Patienten; sind bereits Details vorhanden, werden sie beim Speichern aktualisiert.",
         "data": {
-          "med_name": "Medikamentenname",
-          "full_name": "Voller Name (optional)",
-          "strength": "Stärke (z. B. 5 mg)",
+          "med_name": "Name des Medikaments",
+          "full_name": "Vollständiger Name (optional)",
+          "strength": "Wirkstärke (z. B. 5mg)",
           "brand": "Marke (optional)",
-          "prescribed_for": "Verschrieben für (Zustand)",
-          "dosage": "Dosierungszusammenfassung (z. B. 2 Tabletten zweimal täglich)"
+          "prescribed_for": "Verordnet gegen (Erkrankung)",
+          "dosage": "Dosierung (z. B. 2 Tabletten zweimal täglich)"
         }
       },
       "edit_medication": {
@@ -191,32 +211,40 @@
         "title": "Details für {medication} bearbeiten",
         "description": "Aktualisiere die Referenzdetails für {medication}.",
         "data": {
-          "full_name": "Voller Name (optional)",
-          "strength": "Stärke (z. B. 5 mg)",
+          "full_name": "Vollständiger Name (optional)",
+          "strength": "Wirkstärke (z. B. 5mg)",
           "brand": "Marke (optional)",
-          "prescribed_for": "Verschrieben für (Zustand)",
-          "dosage": "Dosierungszusammenfassung (z. B. 2 Tabletten zweimal täglich)"
+          "prescribed_for": "Verordnet gegen (Erkrankung)",
+          "dosage": "Dosierung (z. B. 2 Tabletten zweimal täglich)"
         }
       },
       "remove_medication": {
         "title": "Medikamentendetails entfernen",
         "data": {
-          "remove": "Medikamente, für die Details gelöscht werden sollen"
+          "remove": "Medikamente, deren Details gelöscht werden sollen"
         }
       },
       "settings": {
         "title": "Erinnerungseinstellungen",
-        "description": "Patiententyp, wer benachrichtigt werden soll, Zeitformat, wann die Dosen für den Tag zurückgesetzt werden und wie die Erinnerungen wiederholt werden.",
+        "description": "Patiententyp, wer benachrichtigt wird, Zeitanzeige, wann die Dosen für den Tag zurückgesetzt werden und wie hartnäckig erinnert wird.",
         "data": {
           "patient_type": "Patiententyp",
           "notify": "Benachrichtigungsziel (Person oder Gruppe)",
           "time_format": "Zeitformat",
           "reset_time": "Tägliche Rücksetzzeit",
-          "nag_minutes": "Erinnerungsfenster (Minuten nach der Dosis)",
-          "nag_interval": "Erneute Erinnerung alle (Minuten)"
+          "nag_minutes": "Erinnerungszeitraum (Minuten nach der Dosis)",
+          "nag_interval": "Erneut erinnern alle (Minuten)",
+          "skip_buttons": "Schaltflächen zum teilweisen Auslassen",
+          "plan_view": "Planansicht für Pillendose",
+          "pause_switches": "Pausenschalter",
+          "streak": "Einnahme-Serie"
         },
         "data_description": {
-          "nag_interval": "Verwende ein Vielfaches von 5; Erinnerungen werden alle 5 Minuten überprüft, daher führen andere Werte zu ungleichmäßigeren Wiederholungen."
+          "nag_interval": "Verwende ein Vielfaches von 5; Erinnerungen werden in einem 5-Minuten-Takt ausgewertet, andere Werte führen zu ungleichmäßigeren Erinnerungen.",
+          "skip_buttons": "Fügt bei Dosen mit zwei oder mehr Medikamenten pro Medikament eine Schaltfläche hinzu, die die Dosis als gegeben markiert und dabei dieses eine Medikament auslässt (sein Vorrat wird nicht verringert). Standardmäßig aus; aktiviere dies, wenn ein Medikament einer gruppierten Dosis manchmal fehlt.",
+          "plan_view": "Fügt optional einen Tagesplan zum Befüllen einer Pillendose hinzu: einen Plan-Sensor und eine Zahl für den Tagesversatz (0 = heute), um durch die Tage zu blättern. Die mitgelieferten Dashboards zeigen ihn als Tabelle mit den Medikamenten und Mengen jedes Tages pro Zeitfenster. Standardmäßig aus.",
+          "pause_switches": "Fügt jeder geplanten Dosis einen Pausenschalter hinzu. Schalte ihn ein, um das Medikament auszusetzen, bis du ihn wieder ausschaltest, z. B. wenn ein Arzt es vorübergehend absetzt oder es saisonal ist: keine Erinnerungen, keine Kennzeichnung als verpasst und keine Verringerung des Vorrats. Die Pause bleibt über mehrere Tage bestehen, anders als „Heute auslassen“, das nur für einen Tag gilt. Standardmäßig aus.",
+          "streak": "Fügt pro Patient einen Sensor hinzu, der die aufeinanderfolgenden Tage zählt, an denen jede geplante Dosis eingenommen wurde, sowie die längste Serie, den letzten verpassten Tag und einen Einnahmeprozentsatz der letzten 30 Tage. Eine ausgelassene Dosis erhält die Serie, senkt aber den Prozentsatz; eine verpasste Dosis unterbricht sie. Standardmäßig aus. Es wird ein kleiner Tagesverlauf gespeichert, um vergangene Serien anzeigen zu können."
         }
       }
     }
